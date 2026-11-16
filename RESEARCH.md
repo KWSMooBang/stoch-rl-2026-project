@@ -1,7 +1,7 @@
 # StochRL — RESEARCH
 
 ## 현재 방향 (2026-11-17)
-Point cloud 기반 gripper goal + frozen VLA(Cosmos3 Edge) residual RL. 아이디어 노트(사람, 2026-11-17).
+Point cloud 기반 gripper goal + frozen VLA(π0.5, lerobot/pi05_libero_finetuned) residual RL. 아이디어 노트(사람, 2026-11-17).
 차별점 후보: T004에서 frozen VLA가 instruction을 무시함(LIBERO-Object swap follow 2%) → instruction에 맞는 3D 기하 목표로 shortcut을 고칠 수 있는가.
 유사 연구: Object-Centric Residual RL (Microsoft 2026; frozen VLA + 물체 6-DoF pose residual, 목표 물체는 사람이 지정).
 
@@ -52,6 +52,7 @@ Point cloud 기반 gripper goal + frozen VLA(Cosmos3 Edge) residual RL. 아이�
 - 2026-11-17: 방향 전환 → point cloud gripper goal + frozen VLA residual RL. 먼저 RL 없이 oracle 목표 handover PoC(T006).
   grasp 추정기 = GraspGen(PTv3 encoder, diffusion, Franka Panda ckpt, 물체 point cloud 입력). 대안 M2T2. 언어 grounding은 당분간 sim segmentation.
   SF critic은 residual RL이 동작한 뒤로 미룸.
+- 2026-11-17: frozen VLA = π0.5 (사람 지시, Cosmos3 Edge 대신). T006은 π0.5로 H0 shortcut 기준선부터 다시 잰다.
 
 ## GPU 예산
 - 사용 가능: GPU 0 (RTX 4090). GPU 1·2는 다른 사용자 사용 중
