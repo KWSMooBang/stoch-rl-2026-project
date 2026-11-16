@@ -35,8 +35,9 @@ Point cloud 기반 gripper goal + frozen VLA(π0.5, lerobot/pi05_libero_finetune
 5. ~~T005 base Cosmos3-Edge world model swap~~ (중지: base 모델이 LIBERO 장면에서 생성 안 됨, 사람 판단)
 6. T006 handover PoC: oracle 목표로 controller가 j 앞까지 → frozen VLA에 넘김 (진행 중)
 7. T007 GraspGen 설치 + LIBERO point cloud grasp 추정·sim lift 검증 (진행 중)
-8. (T006 결과에 따라) residual SAC: oracle 목표 → 예측 목표(GraspGen) → SF critic
-9. 보류: UVA 상상 보상 비교 (문서 9절)
+8. T008 residual RL PoC (명세 초안, T006·T007 뒤 착수): frozen π0.5 + SAC residual, oracle/GraspGen 목표 PBRS, swap 쌍 2개, 10 run 이하
+9. (T008 뒤) SF critic
+10. 보류: UVA 상상 보상 비교 (문서 9절)
 
 ## 결정
 - 2026-11-15: PushT를 주 환경으로. 기본 damping=0이라 damping으로는 마찰을 키울 수 없음 → env 수정 필요
@@ -58,4 +59,5 @@ Point cloud 기반 gripper goal + frozen VLA(π0.5, lerobot/pi05_libero_finetune
 - 사용 가능: GPU 0 (RTX 4090). GPU 1·2는 다른 사용자 사용 중
 - 총 예산: 미정 — T001의 추론 시간 측정 후 본 실험 규모와 함께 정한다
 - pilot(T001+T002): 상한 10 GPU-h → 사용 3.9 GPU-h
-- 본 실험: 상상 보상 RL run 1개(20만 step) ≈ 2.3–3.8 GPU-h. 문서 계획(약 180 run) 그대로면 400–700 GPU-h → 사람 결정 대기
+- (보류) UVA 본 실험 추정 400–700 GPU-h
+- 2026-11-17: T006 상한 5, T007 상한 2, T008 RL PoC 상한 10 GPU-h (GPU 0). 그 이상 본 실험 예산은 PoC 뒤 사람과 결정
