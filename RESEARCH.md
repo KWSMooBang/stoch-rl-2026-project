@@ -24,7 +24,7 @@
 ## 백로그
 1. ~~T001 환경 설정~~ (완료, exp/env-setup)
 2. ~~T002 pilot~~ (완료, exp/pilot)
-3. T003 UVA 코드 제거 + LeRobot 서브모듈 + Cosmos3 Edge 환경 (진행 중)
+3. ~~T003 UVA 코드 제거 + LeRobot 서브모듈 + Cosmos3 Edge 환경~~ (완료, exp/lerobot-setup)
 4. ~~T004 LIBERO-Object instruction swap~~ (완료: 가설 기각, 영상도 shortcut)
    가설(사람): LIBERO-Object는 instruction↔scene 1:1이라 shortcut 위험. 영상은 instruction을 따르고 행동은 scene shortcut을 따른다.
 5. T005 base Cosmos3-Edge(미세조정 전) world model로 같은 swap 측정 (진행 중)
