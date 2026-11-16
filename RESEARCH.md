@@ -25,9 +25,11 @@
 1. ~~T001 환경 설정~~ (완료, exp/env-setup)
 2. ~~T002 pilot~~ (완료, exp/pilot)
 3. T003 UVA 코드 제거 + LeRobot 서브모듈 + Cosmos3 Edge 환경 (진행 중)
-4. Cosmos3 Edge 상상 품질·비용 확인, LIBERO-plus perturbation을 shift·OOD 축 후보로 검토
-5. residual SAC + 보상 구현
-6. λ 튜닝 → 마찰 주 실험 → 틀린 계획 주입 → OOD 확장 (문서 9절, 약 180 run)
+4. T004 LIBERO-Object instruction swap: future prediction vs action의 shortcut (T003 후)
+   가설(사람): LIBERO-Object는 instruction↔scene 1:1이라 shortcut 위험. 영상은 instruction을 따르고 행동은 scene shortcut을 따른다.
+5. Cosmos3 Edge 상상 품질·비용 확인, LIBERO-plus perturbation을 shift·OOD 축 후보로 검토
+6. residual SAC + 보상 구현
+7. λ 튜닝 → 마찰 주 실험 → 틀린 계획 주입 → OOD 확장 (문서 9절, 약 180 run)
 
 ## 결정
 - 2026-11-15: PushT를 주 환경으로. 기본 damping=0이라 damping으로는 마찰을 키울 수 없음 → env 수정 필요
