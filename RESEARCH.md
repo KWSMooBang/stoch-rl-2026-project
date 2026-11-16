@@ -1,6 +1,11 @@
 # StochRL — RESEARCH
 
-## 목표
+## 현재 방향 (2026-11-17)
+Point cloud 기반 gripper goal + frozen VLA(Cosmos3 Edge) residual RL. 아이디어 노트(사람, 2026-11-17).
+차별점 후보: T004에서 frozen VLA가 instruction을 무시함(LIBERO-Object swap follow 2%) → instruction에 맞는 3D 기하 목표로 shortcut을 고칠 수 있는가.
+유사 연구: Object-Centric Residual RL (Microsoft 2026; frozen VLA + 물체 6-DoF pose residual, 목표 물체는 사람이 지정).
+
+## 이전 목표 (보류, 기록용)
 고정 WAM(UVA)의 상상을 residual SAC의 보상에 쓰는 두 방식을 비교한다.
 - 시간 기준 tracking 비용 (기존 제안서)
 - 상상 경로 cost-to-go potential (새 방식, 최적 정책 보존)
@@ -27,10 +32,11 @@
 3. ~~T003 UVA 코드 제거 + LeRobot 서브모듈 + Cosmos3 Edge 환경~~ (완료, exp/lerobot-setup)
 4. ~~T004 LIBERO-Object instruction swap~~ (완료: 가설 기각, 영상도 shortcut)
    가설(사람): LIBERO-Object는 instruction↔scene 1:1이라 shortcut 위험. 영상은 instruction을 따르고 행동은 scene shortcut을 따른다.
-5. T005 base Cosmos3-Edge(미세조정 전) world model로 같은 swap 측정 (진행 중)
-6. Cosmos3 Edge 상상 품질·비용 확인, LIBERO-plus perturbation을 shift·OOD 축 후보로 검토
-7. residual SAC + 보상 구현
-8. λ 튜닝 → 마찰 주 실험 → 틀린 계획 주입 → OOD 확장 (문서 9절, 약 180 run)
+5. ~~T005 base Cosmos3-Edge world model swap~~ (중지: base 모델이 LIBERO 장면에서 생성 안 됨, 사람 판단)
+6. T006 handover PoC: oracle 목표로 controller가 j 앞까지 → frozen VLA에 넘김 (진행 중)
+7. T007 GraspGen 설치 + LIBERO point cloud grasp 추정·sim lift 검증 (진행 중)
+8. (T006 결과에 따라) residual SAC: oracle 목표 → 예측 목표(GraspGen) → SF critic
+9. 보류: UVA 상상 보상 비교 (문서 9절)
 
 ## 결정
 - 2026-11-15: PushT를 주 환경으로. 기본 damping=0이라 damping으로는 마찰을 키울 수 없음 → env 수정 필요
@@ -43,6 +49,9 @@
 - 2026-11-16: UVA 사용 중단 (사람 결정). 이유: 상상이 짧고(1.6 s) PushT 질량 shift에서는 상상 방향 ≈ 목표 방향이라 Φ_img가 Φ_goal과 구분되지 않을 위험, 모델이 작고 오래됨.
   → LeRobot 최신 버전 서브모듈 + Cosmos3 Edge(4.6B, 상상 영상 출력, LIBERO-10 95–97%). Nano(16.5B)는 4090 24GB에 안 들어감.
   UVA pilot 코드는 exp/env-setup, exp/pilot 브랜치에 보존(main 미병합).
+- 2026-11-17: 방향 전환 → point cloud gripper goal + frozen VLA residual RL. 먼저 RL 없이 oracle 목표 handover PoC(T006).
+  grasp 추정기 = GraspGen(PTv3 encoder, diffusion, Franka Panda ckpt, 물체 point cloud 입력). 대안 M2T2. 언어 grounding은 당분간 sim segmentation.
+  SF critic은 residual RL이 동작한 뒤로 미룸.
 
 ## GPU 예산
 - 사용 가능: GPU 0 (RTX 4090). GPU 1·2는 다른 사용자 사용 중
