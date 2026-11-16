@@ -33,9 +33,9 @@ Point cloud 기반 gripper goal + frozen VLA(π0.5, lerobot/pi05_libero_finetune
 4. ~~T004 LIBERO-Object instruction swap~~ (완료: 가설 기각, 영상도 shortcut)
    가설(사람): LIBERO-Object는 instruction↔scene 1:1이라 shortcut 위험. 영상은 instruction을 따르고 행동은 scene shortcut을 따른다.
 5. ~~T005 base Cosmos3-Edge world model swap~~ (중지: base 모델이 LIBERO 장면에서 생성 안 됨, 사람 판단)
-6. T006 handover PoC: oracle 목표로 controller가 j 앞까지 → frozen VLA에 넘김 (진행 중)
-7. T007 GraspGen 설치 + LIBERO point cloud grasp 추정·sim lift 검증 (진행 중)
-8. T008 residual RL PoC (명세 초안, T006·T007 뒤 착수): frozen π0.5 + SAC residual, oracle/GraspGen 목표 PBRS, swap 쌍 2개, 10 run 이하
+6. ~~T006 handover PoC~~ (완료: shortcut은 위치, handover로 해결, 남은 실패는 place)
+7. ~~T007 GraspGen~~ (완료: 필터 top-k lift 87.2%)
+8. T008 residual RL PoC (진행 중): frozen π0.5 + SAC residual, oracle/GraspGen 목표 PBRS, swap 쌍 2개, 10 run 이하
 9. (T008 뒤) SF critic
 10. 보류: UVA 상상 보상 비교 (문서 9절)
 
