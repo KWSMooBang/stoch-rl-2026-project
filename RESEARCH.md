@@ -1,6 +1,12 @@
 # StochRL — RESEARCH
 
-## 현재 방향 (2026-11-17)
+## 현재 방향 (2026-11-17, 오후)
+Fully-simulated human hand trace reward for robot/VLA RL (사람 설계서 v1.0). ManiSkill 3, state PPO, Stage 0부터.
+L1 검토로 고친 점: 주 비교 = 손+물체(S5) vs 물체만(X3, HuDOR arXiv 2410.23289), trace 추종 controller C0 기준선 필수,
+PushCube는 smoke용, 주 과제는 접촉 전략이 중요한 과제, 할인 PBRS 주 보상 금지(T008c 교훈), 보상 단위 테스트 선행.
+백로그: T009 Stage 0 (환경 + 시연 + 보상 + PPO 비교, GPU 0, 상한 6 GPU-h) → Go면 Stage 0.5(embodiment) → Stage 1(GT+noise, 손 메시 필요).
+
+## 이전 방향 (중단, 2026-11-17 오전)
 Point cloud 기반 gripper goal + frozen VLA(π0.5, lerobot/pi05_libero_finetuned) residual RL. 아이디어 노트(사람, 2026-11-17).
 차별점 후보: T004에서 frozen VLA가 instruction을 무시함(LIBERO-Object swap follow 2%) → instruction에 맞는 3D 기하 목표로 shortcut을 고칠 수 있는가.
 유사 연구: Object-Centric Residual RL (Microsoft 2026; frozen VLA + 물체 6-DoF pose residual, 목표 물체는 사람이 지정).
