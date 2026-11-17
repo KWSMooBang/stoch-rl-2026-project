@@ -35,7 +35,7 @@ Point cloud 기반 gripper goal + frozen VLA(π0.5, lerobot/pi05_libero_finetune
 5. ~~T005 base Cosmos3-Edge world model swap~~ (중지: base 모델이 LIBERO 장면에서 생성 안 됨, 사람 판단)
 6. ~~T006 handover PoC~~ (완료: shortcut은 위치, handover로 해결, 남은 실패는 place)
 7. ~~T007 GraspGen~~ (완료: 필터 top-k lift 87.2%)
-8. T008 residual RL PoC (진행 중): frozen π0.5 + SAC residual, oracle/GraspGen 목표 PBRS, swap 쌍 2개, 10 run 이하
+8. T008 residual RL PoC → T008b(그리퍼 수정) → T008c(디버그): RL 최선 1/20, oracle controller 20/20. 다음 방향 사람 결정 대기
 9. (T008 뒤) SF critic
 10. 보류: UVA 상상 보상 비교 (문서 9절)
 
