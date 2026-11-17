@@ -14,6 +14,7 @@
 | T008 | 2026-11-17 | residual RL PoC 첫 시도 (frozen π0.5 + SAC) | t008-A-R2-s0 0/20 (results.tsv final_success 0.0) | discard: 그리퍼 채널 D 결함 | ≈2.1 |
 | T008b | 2026-11-17 | 그리퍼 분리(D_g=2) 후 재제출 | t008b-A-R2-s0 0/20, t008b-A-R3-s0 0/20 (hand-coded 상한 10/20, 20/20) | discard: 학습 설정 문제, 나머지 7 run 취소 | ≈1.8 |
 | T008c | 2026-11-17 | 원인 디버그 + 40k 확인 학습 | c1 0/20(EE–j 5 cm) / c3 0/20 / c2b(RLPD 데모) 1/20, grasp j 50% | 원인 확인. 데모 없이 성공 0 | 1.75 |
+| T009 | 2026-11-17 | 가상 손 trace 보상 Stage 0 (ManiSkill 3 state PPO, 1.0M step, seed 3) | PullCube: X3 0%, S3 81.8%, S5 53.0%, S1 82.9%, S6 0%; C0 σ10 87.1% vs S5n10 51.2%. PushCube: X3 0%, S5 81.5%, S1 82.0% | keep(부분 지지): 손 > 물체, RL < controller | ≈1.3 |
 
 ## T004 메모
 - 영상과 행동은 같은 denoising에서 함께 샘플되므로 일치는 구조상 예상 가능. 남은 질문: 정책 미세조정 전 base world model(Cosmos3-Edge)의 영상은 instruction을 따르는가.
@@ -26,3 +27,8 @@
 - 할인 PBRS(Φ(terminal)=0)는 에피소드 합이 정책과 무관하게 ≈ −Φ(s0)라 reach 신호를 주지 못했다. 성공 종료 step 순보상 +0.10 < shortcut 종료 +0.50.
 - SAC α0=0.1은 step 보상(~0.01)보다 훨씬 커서 탐색 noise가 frozen π0.5를 망가뜨렸다. α0=1e-3, target entropy −4로 고치면 손이 j 근처(5 cm)까지 간다.
 - 같은 조건에서 oracle goal hand-coded controller는 20/20. RL(최선 1/20)은 아직 단순 기하 controller보다 훨씬 낮다.
+
+## T009 메모
+- 물체 궤적만 쓰는 보상(X3, HuDOR 방식)은 두 과제 모두 1.0M step에서 0% — 접촉 전 신호가 없음. 단 X3는 정지에도 정답 보상의 54%를 받는 약점이 있다.
+- 같은 trace를 따라가는 controller(C0)가 깨끗한 trace 100%, σ=10 mm 87–91%. RL(51–82%)은 어느 조건에서도 넘지 못함 — T008c와 같은 결론.
+- S5(손+물체+접촉)가 PullCube에서 seed 1개씩 0%로 붕괴. 손 trace만(S3)이 더 안정.
