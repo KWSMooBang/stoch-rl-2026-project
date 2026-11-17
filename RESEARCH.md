@@ -55,6 +55,13 @@ Point cloud 기반 gripper goal + frozen VLA(π0.5, lerobot/pi05_libero_finetune
   SF critic은 residual RL이 동작한 뒤로 미룸.
 - 2026-11-17: frozen VLA = π0.5 (사람 지시, Cosmos3 Edge 대신). T006은 π0.5로 H0 shortcut 기준선부터 다시 잰다.
 
+## 정리 (2026-11-17)
+- 사람 판단: 지금까지 PoC가 모두 실패 → 중단.
+- 삭제함: 실험 worktree 10개(venv 포함), exp/* 브랜치(로컬·origin), /workspace/stochrl_t001–t008c 원자료, /cache/graspgen.
+  위 기록과 EXPERIMENTS.md에 나오는 브랜치 이름은 이제 존재하지 않는다.
+- 남김: /outputs/StochRL(요약·그림·runs·results.tsv·task 명세), 아티팩트(연구 노트, PushT OOD 결과, PA-WFRL 설계 문서), 이 파일과 EXPERIMENTS.md.
+- main에는 여전히 UVA 원본 코드가 있다(UVA 제거·LeRobot 서브모듈은 exp/lerobot-setup에만 있었고 병합 전에 삭제됨).
+
 ## GPU 예산
 - 사용 가능: GPU 0 (RTX 4090). GPU 1·2는 다른 사용자 사용 중
 - 총 예산: 미정 — T001의 추론 시간 측정 후 본 실험 규모와 함께 정한다
