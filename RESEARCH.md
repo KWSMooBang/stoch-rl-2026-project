@@ -1,6 +1,9 @@
 # StochRL — RESEARCH
 
-## 현재 방향 (2026-11-17, 오후)
+## 폐기 (2026-11-18, 사람 결정): 가상 손 trace 보상
+이유: T009에서 손 trace 보상이 물체 궤적 보상보다는 낫지만, 같은 trace를 따라가는 controller를 RL이 넘지 못함.
+
+## 이전 방향 (2026-11-17, 오후, 폐기)
 Fully-simulated human hand trace reward for robot/VLA RL (사람 설계서 v1.0). ManiSkill 3, state PPO, Stage 0부터.
 L1 검토로 고친 점: 주 비교 = 손+물체(S5) vs 물체만(X3, HuDOR arXiv 2410.23289), trace 추종 controller C0 기준선 필수,
 PushCube는 smoke용, 주 과제는 접촉 전략이 중요한 과제, 할인 PBRS 주 보상 금지(T008c 교훈), 보상 단위 테스트 선행.
