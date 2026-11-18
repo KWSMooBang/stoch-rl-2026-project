@@ -42,6 +42,11 @@ def gate(args):
     for cond in AG.GATE_ORDER:
         for s in GATE_SEEDS:
             runs.append(dict(BASE, **CONDITIONS[cond], method="B0", seed=s, tag=f"{cond}|B0|s{s}"))
+    # diagnostics only (NOT used for the gate decision): HER, and oracle-supervised B6 to separate
+    # "RL cannot learn the skills" from "how held-out goals fail when seen skills are perfect"
+    for cond, m in [("balanced", "B1"), ("balanced", "B6"), ("skew0.95", "B6")]:
+        for s in GATE_SEEDS:
+            runs.append(dict(BASE, **CONDITIONS[cond], method=m, seed=s, tag=f"diag:{cond}:{m}|{m}|s{s}"))
     log(f"gate: {len(runs)} runs")
     res, wall = run_plan(runs, args.procs, log)
     agg = AG.group(res, lambda c: c["tag"].split("|")[0])

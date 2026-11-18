@@ -9,7 +9,7 @@ MAIN_SEEDS = [0, 1, 2, 3, 4]
 VAL_SEEDS = [100, 101]
 
 # shared by every method / condition (same env-step budget, same network)
-BASE = dict(total_steps=3_000_000, eval_every=300_000, eval_eps_curve=20, eval_eps_final=100)
+BASE = dict(total_steps=2_000_000, eval_every=250_000, eval_eps_curve=20, eval_eps_final=100)
 
 # Phase 1 conditions, in the pre-registered order (design 4.3)
 CONDITIONS = {
