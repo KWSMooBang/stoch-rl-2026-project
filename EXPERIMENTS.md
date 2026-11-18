@@ -41,3 +41,6 @@
 
 ## T013 (2026-11-18) DA-CGC gridworld 관문 — No-Go
 | T013 | 2026-11-18 | 8×8 gridworld goal-conditioned DQN, shortcut 재현 관문 | balanced B0 SR_seen 0.02, SER ≈0(held-out 실패는 전부 시간 초과), B6 seen 1.00/unseen 0.00 | 관문 No-Go: shortcut 재현 안 됨, 조합 일반화 실패 | 1.41 |
+
+## T014 (2026-11-18) AAPR 2D pushing — 부분 지지
+| T014 | 2026-11-18 | 2D 관성 pushing + SAC, 방법 10 × 바람 4 × seed 5 | ar1 AUC: aapr1 0.81, mh 0.75, M0 0.69, prog 0.65, aug 0.87 / ar1_hi SR: aapr1 0.64, M0 0.28, prog 0.20, aug 0.98 / bias·iid SR ≈1.00 | 부분 지지: one-step AAPR > progress·M0(지속 바람), 그러나 multi-horizon < one-step, 계산량 맞춘 aug가 전 조건 최고 | 1.91 |
