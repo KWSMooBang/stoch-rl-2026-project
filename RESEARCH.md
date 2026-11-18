@@ -1,5 +1,9 @@
 # StochRL — RESEARCH
 
+## 현재 방향 2 (2026-11-18): DA-CGC (Decision-Aware Counterfactual Goal-Consistency RL, 기말 프로젝트)
+gridworld PoC, goal-conditioned Double DQN + gated counterfactual Q-ranking. T013: Phase 0–1(shortcut 재현) 관문 후 Phase 3 비교. CPU 위주, GPU 0 ≤1 GB, 상한 3 GPU-h.
+L1 수정: μ(oracle vs learned), B3 = gate 없는 정답 ranking, B6 = Q* 회귀 대조군, goal 인코딩 ablation, DQfD 비교.
+
 ## 폐기 (2026-11-18, 사람 결정): Compositional Contrastive RL
 이유: T012에서 shortcut은 transport 방향이고 목적지 waypoint로 해결(H-dest 50/50), 후보 coverage 낮아 critic 재선택 No-Go.
 ~~T012 진단~~ (완료: shortcut은 transport 방향, H-dest 50/50, coverage 낮음 → critic은 목적지 추론 역할로 한정, VLM grounding과 비교 필요). 다음 단계 사람 결정 대기.
