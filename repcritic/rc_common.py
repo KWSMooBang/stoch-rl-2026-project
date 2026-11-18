@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-RLINF = REPO / "third_party" / "RLinf"
+RLINF = Path(os.environ.get("RC_RLINF", str(REPO / "third_party" / "RLinf")))  # override: worktree w/o submodule checkout
 OUT_BIG = Path("/workspace/stochrl_t016")
 OUT_SUM = Path("/outputs/StochRL/t016")
 
