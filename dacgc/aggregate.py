@@ -4,7 +4,9 @@ from __future__ import annotations
 import numpy as np
 
 KEYS = ["SR_seen", "SR_unseen", "seen_rare_sr", "seen_freq_sr", "SER_unseen", "SER_unseen_freq",
-        "unseen_wt_other", "unseen_wrong_obj", "unseen_timeout", "seen_wt", "seen_rare_wt_freq"]
+        "unseen_wt_other", "unseen_wrong_obj", "unseen_timeout", "seen_wt", "seen_rare_wt_freq",
+        "unseen_to_picked", "unseen_to_reached_goal_tgt", "unseen_to_reached_freq_tgt", "seen_rare_timeout",
+        "seen_rare_to_reached_freq_tgt"]
 RANK_KEYS = ["rankacc_branch_seen", "rankacc_common_seen", "rankacc_branch_heldout", "rankacc_common_heldout",
              "rankacc_branch_holding_seen", "rankacc_branch_holding_heldout", "sap_seen", "sap_heldout",
              "shared_divergence_seen", "shared_divergence_heldout"]
@@ -80,7 +82,11 @@ def gate_decision(agg):
         ok = ser_f >= GATE_MIN_SER_FREQ and ser_f >= GATE_MIN_RATIO * ser_o and srs >= GATE_MIN_SR_SEEN
         rows.append(dict(condition=cond, SER_freq=ser_f, SER_other=ser_o, SR_seen=srs,
                          SR_unseen=a["SR_unseen"]["mean"], timeout_unseen=a["unseen_timeout"]["mean"],
-                         wrong_obj_unseen=a["unseen_wrong_obj"]["mean"], meets=ok))
+                         wrong_obj_unseen=a["unseen_wrong_obj"]["mean"],
+                         timeout_picked_unseen=(a.get("unseen_to_picked") or {}).get("mean"),
+                         timeout_reached_goal_tgt_unseen=(a.get("unseen_to_reached_goal_tgt") or {}).get("mean"),
+                         timeout_reached_freq_tgt_unseen=(a.get("unseen_to_reached_freq_tgt") or {}).get("mean"),
+                         meets=ok))
         if ok and chosen is None:
             chosen = cond
     return dict(phase0_go=phase0_go, phase0_sr_seen_balanced=p0["mean"] if p0 else None,

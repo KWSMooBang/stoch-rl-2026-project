@@ -19,17 +19,27 @@ def greedy(net, s: State):
     return q.argmax(1).numpy()
 
 
-def rollout(net, s: State, horizon: int):
-    """Greedy rollout in place; returns committed (obj, tgt) per row (-1 if none)."""
+def rollout(net, s: State, horizon: int, trace: dict | None = None):
+    """Greedy rollout in place; returns committed (obj, tgt) per row (-1 if none).
+    trace (optional, filled): picked = ever held the goal object; carry_on_tgt[k] = ever stood on
+    target k while holding the goal object (T013b failure diagnostic)."""
     B = s.B
     co = np.full(B, -1)
     ct = np.full(B, -1)
+    picked = np.zeros(B, bool)
+    on_t = np.zeros((B, s.tgt.shape[1]), bool)
     while not s.done.all():
+        live = ~s.done
+        hg = live & (s.held == s.go)
+        picked |= hg
+        on_t |= hg[:, None] & (s.tgt == s.agent[:, None, :]).all(-1)
         a = greedy(net, s)
         o, t = commit_info(s, a)
         m = o >= 0
         co[m], ct[m] = o[m], t[m]
         step(s, a, horizon)
+    if trace is not None:
+        trace["picked"], trace["carry_on_tgt"] = picked, on_t
     return co, ct
 
 
@@ -46,16 +56,24 @@ def eval_policy(net, n_per_goal=100, horizon=50, seed=EVAL_SEED):
         s = base.clone()
         s.go[:] = o
         s.gt[:] = t
-        co, ct = rollout(net, s, horizon)
+        tr = {}
+        co, ct = rollout(net, s, horizon, tr)
         out = s.outcome
         wt = out == OUT_WRONG_TARGET
+        to = out == OUT_TIMEOUT
+        ar = np.arange(s.B)
         per_goal[f"{o}{t}"] = dict(
             sr=float((out == OUT_SUCCESS).mean()),
             wt=float(wt.mean()),
             wt_freq=float((wt & (ct == PREF_TARGET[o])).mean()),  # object's frequent target
             wt_other=float((wt & (ct != PREF_TARGET[o])).mean()),
             wrong_obj=float((out == OUT_WRONG_OBJECT).mean()),
-            timeout=float((out == OUT_TIMEOUT).mean()),
+            timeout=float(to.mean()),
+            # timeout anatomy: picked the goal object? stood on the requested / frequent target
+            # while carrying it (and still did not commit)?
+            to_picked=float((to & tr["picked"]).mean()),
+            to_reached_goal_tgt=float((to & tr["carry_on_tgt"][:, t]).mean()),
+            to_reached_freq_tgt=float((to & tr["carry_on_tgt"][:, PREF_TARGET[o]]).mean()),
         )
     return per_goal, summarize(per_goal)
 
@@ -68,7 +86,8 @@ def summarize(pg):
     rare = [(o, RARE_TARGET[o]) for o in range(N_OBJ)]
     S = {}
     for name, gl in [("seen", TRAIN_GOALS), ("seen_freq", pref), ("seen_rare", rare), ("unseen", HELDOUT_GOALS)]:
-        for k in ["sr", "wt", "wt_freq", "wt_other", "wrong_obj", "timeout"]:
+        for k in ["sr", "wt", "wt_freq", "wt_other", "wrong_obj", "timeout", "to_picked", "to_reached_goal_tgt",
+                  "to_reached_freq_tgt"]:
             S[f"{name}_{k}"] = avg(gl, k)
     S["SR_seen"], S["SR_unseen"] = S["seen_sr"], S["unseen_sr"]
     S["SER_unseen"] = S["unseen_wt"]  # goal object committed on a wrong target

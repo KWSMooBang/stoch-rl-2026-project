@@ -1,4 +1,4 @@
-"""8x8 pick-and-place gridworld (design doc 4.1), batched numpy core + Gymnasium wrapper.
+"""NxN (default 5x5 since T013b; DACGC_N env var) pick-and-place gridworld (design doc 4.1), batched numpy core + Gymnasium wrapper.
 
 Objects: 0 Bottle, 1 Bowl, 2 Box.  Targets: 0 Rack, 1 Plate, 2 Stove.
 Actions: 0 Up, 1 Down, 2 Left, 3 Right, 4 Pick, 5 Drop.
@@ -18,11 +18,13 @@ Episode outcome categories (used for SR / SER):
 """
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 
-N = 8
+N = int(os.environ.get("DACGC_N", "5"))  # T013: 8, T013b: 5
 N_CELLS = N * N
 N_OBJ = 3
 N_TGT = 3

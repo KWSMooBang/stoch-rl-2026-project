@@ -8,16 +8,25 @@ GATE_SEEDS = [0, 1, 2]
 MAIN_SEEDS = [0, 1, 2, 3, 4]
 VAL_SEEDS = [100, 101]
 
-# shared by every method / condition (same env-step budget, same network)
-BASE = dict(total_steps=2_000_000, eval_every=250_000, eval_eps_curve=20, eval_eps_final=100)
+# ---- T013b redesign (5x5, FiLM default, common demo warm start) ----
+# shared by every method / condition (same env-step budget, same network).  Env: DACGC_N=5 (default),
+# horizon 30 (Cfg default).  Pilot (2 seeds, 400k): warm-started B0 reached SR_seen 0.95 at 400k
+# and was still rising -> 1.5M steps (< 5M: 5x5 converges faster, spec item 4).
+BASE = dict(total_steps=1_500_000, eval_every=250_000, eval_eps_curve=20, eval_eps_final=100, enc="film")
+# common warm start: 2000 scripted BFS-optimal demos, goals drawn from the condition's own TRAIN-goal
+# distribution (skew-matched), 5000 DQfD updates (n-step TD + large margin), then RL with eps 0.3->0.05.
+WARM = dict(demo="cond", bc_demos=2_000, bc_updates=5_000, eps_start=0.3)
 
 # Phase 1 conditions, in the pre-registered order (design 4.3)
 CONDITIONS = {
-    "balanced": dict(skew=0.5),
-    "skew0.8": dict(skew=0.8),
-    "skew0.95": dict(skew=0.95),
-    "skew0.95+biasedBC": dict(skew=0.95, bc_init=True),
+    "balanced": dict(skew=0.5, **WARM),
+    "skew0.8": dict(skew=0.8, **WARM),
+    "skew0.95": dict(skew=0.95, **WARM),
+    # biased BC: same number of demos but ONLY the 3 preferred goals, then skew-0.95 RL
+    "skew0.95+biasedBC": dict(skew=0.95, **dict(WARM, demo="pref")),
 }
+# T013 (8x8, concat, no warm start) values, kept for reference:
+#   BASE total_steps=2_000_000, horizon 50, CONDITIONS skew only, biased BC = bc_init=True
 
 # Phase 3 validation grids (validation seeds only; selection rule in aggregate.select).
 # Keys: first key must be lam (tie-break = smaller lambda).

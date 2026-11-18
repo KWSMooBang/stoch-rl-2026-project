@@ -36,13 +36,13 @@ OFF_AO = 2 + 2 * N_OBJ + 2 * N_TGT  # obs offset of (object k - agent) vectors (
 
 def phi_obs(obs: np.ndarray, go: np.ndarray) -> np.ndarray:
     """Unit potential (multiplied by cfg.shaping): +1 when holding the goal object; when the hand is
-    empty, -(Manhattan distance agent->goal object)/14.  Depends only on the goal *object*, never on
+    empty, -(Manhattan distance agent->goal object)/(2(N-1)).  Depends only on the goal *object*, never on
     the target, so the target choice (where the shortcut lives) stays sparse."""
     ar = np.arange(len(go))
     hold = obs[ar, HELD0 + 1 + go]
     empty = obs[:, HELD0]
     d = np.abs(obs[ar, OFF_AO + 2 * go]) + np.abs(obs[ar, OFF_AO + 2 * go + 1])  # in units of 1/7
-    return hold - empty * d * 7.0 / 14.0
+    return hold - empty * d * 0.5  # obs offsets are scaled by 1/(N-1)
 
 
 TRAIN_GO = np.array([g[0] for g in TRAIN_GOALS])
@@ -53,8 +53,13 @@ TRAIN_GT = np.array([g[1] for g in TRAIN_GOALS])
 class Cfg:
     method: str = "B0"
     skew: float = 0.5
-    bc_init: bool = False
-    enc: str = "concat"
+    bc_init: bool = False  # T013 biased BC: demos of the 3 preferred goals only (== demo="pref")
+    # T013b common demo warm start: "" none | "cond" demos of the 6 TRAIN goals drawn from the
+    # condition's own goal distribution (skew ratio matched) | "pref" preferred goals only (biased BC)
+    demo: str = ""
+    demo_ratio: float = 0.0  # fraction of each RL batch drawn from the demo buffer (DQfD keeps demos)
+    eps_start: float = 1.0
+    enc: str = "film"
     mu: str = "oracle"
     lam: float = 1.0
     tau: float = 0.005
@@ -68,7 +73,7 @@ class Cfg:
     seed: int = 0
     total_steps: int = 300_000
     n_envs: int = 16
-    horizon: int = 50
+    horizon: int = 30
     gamma: float = 0.95
     lr: float = 3e-4
     batch: int = 128
@@ -174,6 +179,12 @@ class Trainer:
         self.gate_log = []
         self.curve = []
         self.loss_log = []
+        self.demo = None
+        self.demo_mode = "pref" if cfg.bc_init else cfg.demo
+        assert self.demo_mode in ("", "pref", "cond"), self.demo_mode
+        self.bc_eval = True
+        self.demo_n_eps = 0
+        self.demo_goal_counts = None
 
     # ---------------- acting ----------------
     def sample_goals(self, B):
@@ -186,7 +197,7 @@ class Trainer:
     def eps(self):
         span = self.c.eps_steps if self.c.eps_steps > 0 else self.c.eps_frac * self.c.total_steps
         f = min(1.0, self.env_steps / span)
-        return 1.0 + f * (self.c.eps_end - 1.0)
+        return self.c.eps_start + f * (self.c.eps_end - self.c.eps_start)
 
     def act(self, s: State, eps):
         a = MX.greedy(self.net, s)
@@ -350,6 +361,10 @@ class Trainer:
         elif c.method == "B6":
             aux = self.qstar_loss()
         tot = loss + (c.lam * aux if aux is not None else 0.0)
+        if self.demo is not None and c.demo_ratio > 0:
+            nd = max(1, int(round(c.batch * c.demo_ratio)))
+            dtd, dje = self.demo_loss(self.demo.sample(self.rng, nd))
+            tot = tot + c.demo_ratio * (dtd + dje)
         self.opt.zero_grad()
         tot.backward()
         torch.nn.utils.clip_grad_norm_(self.net.parameters(), 10.0)
@@ -360,16 +375,28 @@ class Trainer:
         if self.updates % 1000 == 0:
             self.loss_log.append(dict(step=self.env_steps, td=float(loss.detach()), aux=None if aux is None else float(aux.detach())))
 
-    # ---------------- biased BC init (DQfD-style pretraining on preferred goals only) ----------------
-    def bc_pretrain(self):
+    # ---------------- demo warm start (DQfD-style: n-step TD + large-margin on scripted BFS-optimal demos) ----
+    def demo_goals(self, B):
+        """Goals of demo episodes.  'pref' (T013 biased BC): preferred goals only.  'cond' (T013b
+        common warm start): the condition's own TRAIN-goal distribution.  Held-out never."""
+        if self.demo_mode == "pref":
+            go = self.rng.integers(N_OBJ, size=B)
+            gt = np.array([PREF_TARGET[o] for o in go])
+        else:
+            go, gt = self.sample_goals(B)
+        assert_train_goals(go, gt, "demo goals")
+        return go, gt
+
+    def collect_demos(self):
         c = self.c
         demo = Replay(c.bc_demos * c.horizon)
         n_ep = 0
         B = 64
         while n_ep < c.bc_demos:
-            go = np.array([o for o in self.rng.integers(N_OBJ, size=B)])
-            gt = np.array([PREF_TARGET[o] for o in go])
+            B = min(B, c.bc_demos - n_ep)
+            go, gt = self.demo_goals(B)
             s = sample_layouts(self.rng, B, go, gt)
+            last = np.full(B, -1, np.int64)
             while not s.done.all():
                 live = ~s.done
                 a = np.zeros(B, np.int64)
@@ -377,34 +404,56 @@ class Trainer:
                 ob = observe(s)
                 prev = s.clone()
                 r, te, tr = step(s, a, c.horizon)
-                demo.add(ob[live], a[live], r[live], observe(s)[live], te[live].astype(np.float32), go[live], gt[live],
-                         prev.index(live))
+                idx = demo.add(ob[live], a[live], r[live], observe(s)[live], te[live].astype(np.float32), go[live],
+                               gt[live], prev.index(live))
+                lv = np.where(live)[0]
+                hp = last[lv] >= 0
+                demo.nxt[last[lv][hp]] = idx[hp]  # n-step links inside each demo episode
+                last[lv] = idx
             n_ep += B
-        expert = demo
+        self.demo_n_eps = n_ep
+        self.demo_goal_counts = {f"{o}{t}": int(((demo.go[:demo.n] == o) & (demo.gt[:demo.n] == t) & (demo.d[:demo.n] > 0)).sum())
+                                 for o, t in TRAIN_GOALS}
+        return demo
+
+    def demo_loss(self, idx):
+        """n-step TD on the demo buffer + DQfD large-margin J_E."""
+        c = self.c
+        rb, self.rb = self.rb, self.demo
+        td = self.td_loss(idx)
+        self.rb = rb
+        d = self.demo
+        q = self.net(T(d.obs[idx], "f"), T(d.go[idx]), T(d.gt[idx]))
+        ae = T(d.a[idx])
+        marg = torch.full_like(q, c.margin)
+        marg[torch.arange(len(idx)), ae] = 0
+        je = ((q + marg).max(1).values - q.gather(1, ae[:, None])[:, 0]).mean()
+        return td, je
+
+    def bc_pretrain(self):
+        c = self.c
+        self.demo = self.collect_demos()
         for u in range(c.bc_updates):
-            idx = expert.sample(self.rng, c.batch)
-            rb, self.rb = self.rb, expert
-            td = self.td_loss(idx)
-            self.rb = rb
-            o = T(expert.obs[idx], "f")
-            q = self.net(o, T(expert.go[idx]), T(expert.gt[idx]))
-            ae = T(expert.a[idx])
-            marg = torch.full_like(q, c.margin)
-            marg[torch.arange(len(idx)), ae] = 0
-            je = ((q + marg).max(1).values - q.gather(1, ae[:, None])[:, 0]).mean()
+            idx = self.demo.sample(self.rng, c.batch)
+            td, je = self.demo_loss(idx)
             self.opt.zero_grad()
             (td + je).backward()
+            torch.nn.utils.clip_grad_norm_(self.net.parameters(), 10.0)
             self.opt.step()
             if (u + 1) % c.target_every == 0:
                 self.tgt.load_state_dict(self.net.state_dict())
+            if (u + 1) % 1000 == 0:
+                self.loss_log.append(dict(step=0, bc_update=u + 1, td=float(td.detach()), je=float(je.detach())))
         self.tgt.load_state_dict(self.net.state_dict())
 
     # ---------------- main loop ----------------
     def run(self):
         c = self.c
         t0 = time.time()
-        if c.bc_init:
+        if self.demo_mode:
             self.bc_pretrain()
+            if self.bc_eval:
+                self.curve.append(dict(self.eval_curve(), pretrain=True))
         go, gt = self.sample_goals(c.n_envs)
         s = sample_layouts(self.rng, c.n_envs, go, gt, c.p_hold)
         ep_idx = [[] for _ in range(c.n_envs)]
@@ -471,7 +520,8 @@ class Trainer:
         t0 = time.time()
         pg, S = MX.eval_policy(self.net, c.eval_eps_final, c.horizon)
         out = dict(cfg=asdict(c), summary=S, per_goal=pg, curve=self.curve,
-                   env_steps=self.env_steps, branch_steps=self.branch_steps, updates=self.updates,
+                   env_steps=self.env_steps, branch_steps=self.branch_steps,
+                   demo_eps=self.demo_n_eps, demo_goal_counts=self.demo_goal_counts, updates=self.updates,
                    wall_train_s=wall_train, leak_checks=LEAK_CHECKS["n"], loss_log=self.loss_log[-20:])
         if c.do_switch:
             res, agg = MX.goal_switch(self.net, horizon=c.horizon)

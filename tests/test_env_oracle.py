@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from dacgc.env import (GridPickPlaceEnv, State, sample_layouts, step, observe, N_ACT, OUT_SUCCESS,
+from dacgc.env import (GridPickPlaceEnv, State, sample_layouts, step, observe, N, N_ACT, OUT_SUCCESS,
                        TRAIN_GOALS, HELDOUT_GOALS, assert_train_goals, LeakageError, goal_probs)
 from dacgc.oracle import dist_to_success, q_star, oracle_action
 
@@ -183,5 +183,5 @@ def test_phi_obs():
     p = phi_obs(observe(s), s.go)
     ar = np.arange(64)
     d = np.abs(s.obj[ar, s.go] - s.agent).sum(1)
-    exp = np.where(s.held == s.go, 1.0, np.where(s.held < 0, -d / 14.0, 0.0))
+    exp = np.where(s.held == s.go, 1.0, np.where(s.held < 0, -d / (2.0 * (N - 1)), 0.0))
     assert np.allclose(p, exp, atol=1e-5)

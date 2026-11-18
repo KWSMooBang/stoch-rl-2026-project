@@ -9,6 +9,7 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 import time
 
 from .plans import BASE, CONDITIONS, GATE_SEEDS, MAIN_SEEDS, VAL_SEEDS, VAL_GRID
@@ -33,7 +34,7 @@ def write(run_dir, name, obj):
 
 def phase0_checks():
     """Unit tests: clone/restore, dynamics, oracle == brute-force BFS, leakage assert."""
-    r = subprocess.run(["python", "-m", "pytest", "-q", "tests"], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, "-m", "pytest", "-q", "tests"], capture_output=True, text=True)
     return dict(pytest_rc=r.returncode, pytest_tail=r.stdout.strip().splitlines()[-1] if r.stdout else r.stderr[-300:])
 
 
@@ -42,11 +43,13 @@ def gate(args):
     for cond in AG.GATE_ORDER:
         for s in GATE_SEEDS:
             runs.append(dict(BASE, **CONDITIONS[cond], method="B0", seed=s, tag=f"{cond}|B0|s{s}"))
-    # diagnostics only (NOT used for the gate decision): HER, and oracle-supervised B6 to separate
-    # "RL cannot learn the skills" from "how held-out goals fail when seen skills are perfect"
-    for cond, m in [("balanced", "B1"), ("balanced", "B6"), ("skew0.95", "B6")]:
+    # diagnostics only (NOT used for the gate decision), T013b: oracle-supervised B6 with FiLM (does the
+    # held-out failure turn from timeout into wrong-target?) and the concat-encoding ablation.
+    diags = [("balanced", "B6", {}, "B6"), ("skew0.95", "B6", {}, "B6"),
+             ("balanced", "B6", dict(enc="concat"), "B6concat"), ("balanced", "B0", dict(enc="concat"), "B0concat")]
+    for cond, m, extra, name in diags:
         for s in GATE_SEEDS:
-            runs.append(dict(BASE, **CONDITIONS[cond], method=m, seed=s, tag=f"diag:{cond}:{m}|{m}|s{s}"))
+            runs.append(dict(BASE, **CONDITIONS[cond], **extra, method=m, seed=s, tag=f"diag:{cond}:{name}|{m}|s{s}"))
     log(f"gate: {len(runs)} runs")
     res, wall = run_plan(runs, args.procs, log)
     agg = AG.group(res, lambda c: c["tag"].split("|")[0])
@@ -100,9 +103,9 @@ def main(args):
         "B4_DA-CGC": dict(method="B4", **B4),
         "B6_Qstar_reg": dict(method="B6", **selected["B6"]),
         "B4_learned_mu": dict(method="B4", mu="learned", **B4),
-        "B0_film": dict(method="B0", enc="film"),
-        "B4_film": dict(method="B4", enc="film", **B4),
-        "B6_film": dict(method="B6", enc="film", **selected["B6"]),
+        "B0_concat": dict(method="B0", enc="concat"),
+        "B4_concat": dict(method="B4", enc="concat", **B4),
+        "B6_concat": dict(method="B6", enc="concat", **selected["B6"]),
     }
     mruns = []
     for name, v in variants.items():

@@ -3,7 +3,7 @@
 set -euo pipefail
 echo "assigned CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-}"
 if [[ ",${CUDA_VISIBLE_DEVICES:-}," == *",3,"* ]]; then
-  echo "GPU 3 assigned -> refusing (T013 forbids GPU 3)" >&2
+  echo "GPU 3 assigned -> refusing (T013/T013b forbid GPU 3)" >&2
   exit 3
 fi
 export CUDA_VISIBLE_DEVICES=""
