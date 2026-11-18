@@ -1,5 +1,8 @@
 # StochRL — RESEARCH
 
+## 병행 방향 (2026-11-18): Compositional Contrastive RL (사람 설계서)
+T012 진단: LIBERO-Goal 새 조합에서 목적지 shortcut의 phase(handover)와 후보 coverage. VLA-shortcut-exps goal15 결과·코드 읽기 재사용. GPU 2, 상한 3 GPU-h.
+
 ## 현재 방향 (2026-11-18): Attention-Grounded RL for Shortcut-Resistant VLA (사람 설계서 v0.1)
 L1 검토: P1(frozen π0.5 + residual SAC + attention 보상)은 T008c 근거로 실패 가능성 높아 보류. P0 진단만 먼저.
 P0 질문: LIBERO-Object swap에서 π0.5 action expert→image attention이 (a) 지시 물체 j (b) 기억된 자리의 물체 (c) 원래 물체 i 중 어디를 따르고, 행동과 일치하는가.
