@@ -8,7 +8,7 @@ OUT/metrics.json holds the aggregate table (rewritten after every job).
 
 Phase 3 lambda selection (fixed before seeing main results; same budget for every method):
   validation setting = persistent wind (ar1), training seeds 100 and 101 (disjoint from main
-  seeds 0-4), lambda grid {0.3, 1, 3}, VAL_FRAC of the main step budget; pick the lambda with the
+  seeds 0-4), lambda grid {0.1, 0.3, 1, 3}, VAL_FRAC of the main step budget; pick the lambda with the
   highest mean AUC (ties -> the smaller |log lambda|). Fixed-K ablations k4/k8 reuse mh's lambda.
   sparse has no shaping term (lambda irrelevant).
 """
@@ -30,7 +30,7 @@ P1_METHODS = ["sparse", "dist", "prog", "pbrs"]
 P3_CONDS = ["ar1", "bias", "iid", "ar1_hi"]
 P3_METHODS = ["sparse", "dist", "prog", "pbrs", "aapr1", "mh", "k4", "k8", "mh_ind", "aug"]
 VAL_METHODS = ["dist", "prog", "pbrs", "aapr1", "mh", "mh_ind", "aug"]
-LAM_GRID = [0.3, 1.0, 3.0]
+LAM_GRID = [0.1, 0.3, 1.0, 3.0]
 VAL_SEEDS = [100, 101]
 VAL_FRAC = 0.5
 
