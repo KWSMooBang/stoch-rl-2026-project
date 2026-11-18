@@ -38,3 +38,6 @@
 
 ## T012 (2026-11-18) LIBERO-Goal 목적지 handover 진단 — keep
 | T012 | 2026-11-18 | π0.5, LIBERO-Goal 새 조합 5개(goal15) handover·coverage | H-grasp 15/50(=base), **H-dest 50/50**, H-dest-wrong 학습 목적지 46/50, coverage best-of-16 29% vs 23% | keep: shortcut은 transport 방향, 목적지 waypoint로 해결, 후보 재선택 No-Go | ≈1.6 |
+
+## T013 (2026-11-18) DA-CGC gridworld 관문 — No-Go
+| T013 | 2026-11-18 | 8×8 gridworld goal-conditioned DQN, shortcut 재현 관문 | balanced B0 SR_seen 0.02, SER ≈0(held-out 실패는 전부 시간 초과), B6 seen 1.00/unseen 0.00 | 관문 No-Go: shortcut 재현 안 됨, 조합 일반화 실패 | 1.41 |
