@@ -26,3 +26,11 @@ non-existent Vulkan ICD; `rc_common.setup_env_vars` sets `repcritic/vulkan/nvidi
 - `e02_rollout.py` — 500-episode buffer (70/15/15 by episode), features fp16, snapshots, label-only privileged files.
 - `e02_branch.py` — candidate-level branch labels (16 cand) + multi-continuation oracle (8x4), packed env batches.
 - `e02_analyze.py`, `e02_oracle_eb.py` — oracle E[max p]-E[p] estimators; `e02_card.py` — dataset card stats, feature index.
+
+## E03 (T018) — `/outputs/StochRL/t018/summary_ko.md`, cache/results `/workspace/stochrl_t018/`
+CPU only (no VLA load). Train fit / val select / test report.
+- `e03_cache.py` — consolidate T017 features (+ raw RGB/proprio/t baselines) and label-only targets into `cache/`.
+- `e03_probe.py` — ridge eigen-path probes (all alphas at once), concepts, small-data curves.
+- `e03_stage2.py` — random/PCA/label-shuffle controls, logistic check, candidate-level ranking, E04 input selection
+  (`results/e04_inputs/manifest.yaml`; use `z_crossfit` for critic training).
+- `e03_report.py` — merged `probe_scores.csv`, bootstrap CIs, figures, leakage check.
