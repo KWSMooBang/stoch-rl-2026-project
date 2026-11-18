@@ -109,6 +109,42 @@ def test_restore(env, pol, eid, out):
         cross_env_after_restore_qpos_maxdiff=float((q_r1 - q_r1[:, 0:1]).abs().max()),
         success_same=bool((s_nat == s_r1).all() and (s_r1 == s_r2).all()),
     )
+    # Outcome-level test: closed-loop rollout to the end with the SAME noise in every env.
+    # natural (no restore) vs restore#1 vs restore#2. Any outcome disagreement = sim noise floor.
+    def closed_loop(seed):
+        gg = torch.Generator().manual_seed(seed)
+        s_once = torch.zeros(E, dtype=torch.bool)
+        o = None
+        t = int(C.snapshot(env, 0)["elapsed"][0])
+        obs_cur = env._wrap_obs(env.env.unwrapped.get_obs())
+        while t < C.MAX_STEPS:
+            nz = pol.noise(1, gg).expand(E, -1, -1)
+            a, _ = pol.act(obs_cur, nz)
+            for k in range(C.K):
+                obs_cur, r, te, tr, info = env.step(a[:, k], auto_reset=False)
+                s_once |= info["success"].cpu(); t += 1
+                if t >= C.MAX_STEPS:
+                    break
+        return s_once
+
+    outc = {}
+    for d_snap, seed in ((0, 11), (1, 12)):
+        C.restore_all(env, snap)
+        if d_snap == 1:  # second snapshot point 3 decisions later
+            for _ in range(3):
+                a, _ = pol.act(C.obs_select(env._wrap_obs(env.env.unwrapped.get_obs()), [0]), pol.noise(1, g))
+                for k in range(C.K):
+                    env.step(a[0:1, k].expand(E, -1), auto_reset=False)
+        s2 = C.snapshot(env, 0)
+        nat = closed_loop(seed)
+        C.restore_all(env, s2); r1 = closed_loop(seed)
+        C.restore_all(env, s2); r2 = closed_loop(seed)
+        outc[f"snap{d_snap}"] = dict(t=int(s2["elapsed"][0]), natural=nat.float().mean().item(),
+                                     restore1=r1.float().mean().item(), restore2=r2.float().mean().item(),
+                                     env0_nat_r1_r2=[bool(nat[0]), bool(r1[0]), bool(r2[0])],
+                                     same_env_r1_vs_r2=float((r1 == r2).float().mean()),
+                                     nat_vs_r1_per_env=float((nat == r1).float().mean()))
+    res["outcome"] = outc
     print(json.dumps(res, indent=1), flush=True)
     return res
 
@@ -221,6 +257,7 @@ def main():
     ap.add_argument("--start", type=int, default=0)
     ap.add_argument("--oracle_every", type=int, default=1)
     ap.add_argument("--test_restore", action="store_true")
+    ap.add_argument("--test_E", type=int, default=8)
     ap.add_argument("--noise_seed", type=int, default=100)
     ap.add_argument("--tag", default="oracle")
     args = ap.parse_args()
@@ -231,13 +268,15 @@ def main():
 
     torch.cuda.reset_peak_memory_stats()
     pol = C.Policy(C.build_policy())
-    env = C.build_env(2 * NO)
+    env = C.build_env(args.test_E if args.test_restore else 2 * NO)
     from repcritic.e01_baseline import episode_ids
 
     eids = episode_ids(args.start + args.n_episodes, env.env.unwrapped.total_num_trials)[args.start:].tolist()
     if args.test_restore:
-        res = [test_restore(env, pol, e, out) for e in eids[:3]]
-        (out / "restore_test.json").write_text(json.dumps(res, indent=1))
+        res = []
+        for e in eids:
+            res.append(test_restore(env, pol, e, out))
+            (out / f"restore_test_E{args.test_E}.json").write_text(json.dumps(res, indent=1))
         return
     gen = torch.Generator().manual_seed(args.noise_seed)
     with open(out / f"decisions_{args.start}.jsonl", "w") as f:

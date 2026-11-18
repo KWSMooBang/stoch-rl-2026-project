@@ -160,9 +160,23 @@ class Policy:
         import torch
         from rlinf.models.embodiment.openpi.transforms.apply import apply_output_transform
 
+        import dataclasses
+
+        from torch.utils._pytree import tree_map
+
         with torch.no_grad():
             observation = self.m.env_obs_to_observation(obs)
-            model_actions = self.m.sample_actions(observation, num_steps=self.m.num_steps, noise=noise)
+            B = observation.state.shape[0]
+            mb = int(os.environ.get("RC_POLICY_MB", "0")) or B
+            outs = []
+            for s in range(0, B, mb):
+                sl = slice(s, min(B, s + mb))
+                sub = dataclasses.replace(observation, **{
+                    f.name: tree_map(lambda x: x[sl] if isinstance(x, torch.Tensor) else x,
+                                     getattr(observation, f.name))
+                    for f in dataclasses.fields(observation)})
+                outs.append(self.m.sample_actions(sub, num_steps=self.m.num_steps, noise=noise[sl]))
+            model_actions = torch.cat(outs, 0)
             out = apply_output_transform(
                 self.m._output_transform_fn,
                 {"actions": model_actions, "state": observation.state},
