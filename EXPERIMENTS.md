@@ -35,3 +35,6 @@
 
 ## T010 (2026-11-18) attention 진단 P0 — keep
 | T010 | 2026-11-18 | π0.5 action expert→image attention, LIBERO-Object swap | attention 1위: off-spot 80개 중 spot obj 55 / j 7, 행동 일치 77%, dissociation 3%. spot obj masking Δpos 0.29–0.40 | keep: attention은 위치 shortcut을 그대로 반영. P1 No-Go 권고, 사람 지시로 T011 진행 | ≈1.6 |
+
+## T012 (2026-11-18) LIBERO-Goal 목적지 handover 진단 — keep
+| T012 | 2026-11-18 | π0.5, LIBERO-Goal 새 조합 5개(goal15) handover·coverage | H-grasp 15/50(=base), **H-dest 50/50**, H-dest-wrong 학습 목적지 46/50, coverage best-of-16 29% vs 23% | keep: shortcut은 transport 방향, 목적지 waypoint로 해결, 후보 재선택 No-Go | ≈1.6 |
