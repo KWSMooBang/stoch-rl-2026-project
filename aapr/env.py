@@ -219,7 +219,11 @@ class PushEnv(gym.Env):
         return float(np.linalg.norm(self.x - self.g))
 
     def reach_gap(self) -> float:
-        return float(max(0.0, np.linalg.norm(self.p - self.x) - R_SUM))
+        """Distance from the pusher to the push point behind the object (opposite the goal).
+        Shared reach shaping for every method (doc 6.1)."""
+        to_g = self.g - self.x
+        n = to_g / max(np.linalg.norm(to_g), 1e-9)
+        return float(np.linalg.norm(self.p - (self.x - n * R_SUM)))
 
     def _obs(self) -> np.ndarray:
         return np.concatenate([self.p, self.x, self.v, self.g, self.w * 10.0,

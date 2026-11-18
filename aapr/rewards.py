@@ -5,7 +5,7 @@ step, 0.1), so one step of full-speed pushing straight at the goal gives ~+1.
 
 Common to every method (doc 6.1, "no free shaping for AAPR"):
     r = R_SUCC * success + lam * shaping + ETA * reach - C_ACT * |a|^2
-    reach = (e_t - e_{t+1}) / 0.1,  e = max(0, |p - x| - R_SUM)  (pusher-object gap)
+    reach = (e_t - e_{t+1}) / 0.1,  e = |p - (x - n_goal * R_SUM)|  (pusher to push point)
 
 Shaping per method:
     sparse  : 0

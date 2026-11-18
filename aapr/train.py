@@ -113,7 +113,7 @@ def attribution_stats(cond, trajs, n_states=200, m_ref=32, seed=0, eps=0.05, del
 
 def train(cond, method, lam=1.0, seed=0, total_steps=60_000, eval_every=5_000, eval_eps=50,
           final_eval_eps=100, learning_starts=2_000, batch=256, aug_n=16, alpha0=0.05,
-          attribution=True, log=print):
+          attribution=True, utd=1, log=print):
     torch.set_num_threads(1)
     t0 = time.time()
     rng = np.random.default_rng(seed)
@@ -153,7 +153,8 @@ def train(cond, method, lam=1.0, seed=0, total_steps=60_000, eval_every=5_000, e
             train_succ.append(info["success"]); n_eps += 1; ep_ret = 0.0
             o, _ = env.reset()
         if step > learning_starts:
-            upd = agent.update(rb.sample(rng, batch))
+            for _ in range(utd):
+                upd = agent.update(rb.sample(rng, batch))
         if step % eval_every == 0:
             res = evaluate(agent, cond, eval_eps)
             res["step"] = step
@@ -164,7 +165,7 @@ def train(cond, method, lam=1.0, seed=0, total_steps=60_000, eval_every=5_000, e
                 f"alpha {upd[2]:.3f} q {upd[3]:.2f} |sh| {np.mean(shaping_abs[-eval_every:]):.3f} "
                 f"t {time.time() - t0:.0f}s")
     train_time = time.time() - t0
-    final, trajs = evaluate(agent, cond, final_eval_eps, seed0=EVAL_SEED0 + 5000, record=attribution)
+    final, trajs = evaluate(agent, cond, final_eval_eps, seed0=EVAL_SEED0 + 5000, record=True)
     helps = evaluate(agent, cond, 50, seed0=HELP_SEED0, helps=True)
     out = dict(cond=cond, method=method, lam=lam, seed=seed, total_steps=total_steps,
                curve=curve, auc=float(np.mean([c["sr"] for c in curve])), final=final,
