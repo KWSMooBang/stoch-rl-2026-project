@@ -32,3 +32,6 @@
 - 물체 궤적만 쓰는 보상(X3, HuDOR 방식)은 두 과제 모두 1.0M step에서 0% — 접촉 전 신호가 없음. 단 X3는 정지에도 정답 보상의 54%를 받는 약점이 있다.
 - 같은 trace를 따라가는 controller(C0)가 깨끗한 trace 100%, σ=10 mm 87–91%. RL(51–82%)은 어느 조건에서도 넘지 못함 — T008c와 같은 결론.
 - S5(손+물체+접촉)가 PullCube에서 seed 1개씩 0%로 붕괴. 손 trace만(S3)이 더 안정.
+
+## T010 (2026-11-18) attention 진단 P0 — keep
+| T010 | 2026-11-18 | π0.5 action expert→image attention, LIBERO-Object swap | attention 1위: off-spot 80개 중 spot obj 55 / j 7, 행동 일치 77%, dissociation 3%. spot obj masking Δpos 0.29–0.40 | keep: attention은 위치 shortcut을 그대로 반영. P1 No-Go 권고, 사람 지시로 T011 진행 | ≈1.6 |

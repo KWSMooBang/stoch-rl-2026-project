@@ -7,7 +7,7 @@ T012 진단: LIBERO-Goal 새 조합에서 목적지 shortcut의 phase(handover)�
 L1 검토: P1(frozen π0.5 + residual SAC + attention 보상)은 T008c 근거로 실패 가능성 높아 보류. P0 진단만 먼저.
 P0 질문: LIBERO-Object swap에서 π0.5 action expert→image attention이 (a) 지시 물체 j (b) 기억된 자리의 물체 (c) 원래 물체 i 중 어디를 따르고, 행동과 일치하는가.
 주의: 같은 서버의 VLA-shortcut-exps 연구(π0.5 LIBERO shortcut, 위치 암기 H4, LIBERO-PRO, SAE)와 주제가 겹침 — 관계는 사람 결정 대기, 코드는 읽기만.
-백로그: T010 P0 진단 (GPU 0, 상한 4 GPU-h, 진행 중) → T011 P1 residual SAC + attention 보상 E0–E4 (사람 지시 "RL 효과까지 검증", 상한 10 GPU-h, T010 뒤 착수) → 결과에 따라 P2(adapter).
+백로그: ~~T010 P0~~ (완료: attention은 기억 자리의 물체를 따름) → T011 P1 residual SAC + attention 보상 E0–E4 (사람 지시 "RL 효과까지 검증", 상한 10 GPU-h, T010 뒤 착수) → 결과에 따라 P2(adapter).
 
 ## 폐기 (2026-11-18, 사람 결정): 가상 손 trace 보상
 이유: T009에서 손 trace 보상이 물체 궤적 보상보다는 낫지만, 같은 trace를 따라가는 controller를 RL이 넘지 못함.
