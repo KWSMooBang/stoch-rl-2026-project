@@ -1,0 +1,236 @@
+[
+ {
+  "episode_id": 266722,
+  "cross_env_qpos_maxdiff_before_snapshot": 2.0638108253479004e-05,
+  "restored_obs_image_maxdiff": 175.0,
+  "natural_vs_restore1_qpos_maxdiff": 0.06539011001586914,
+  "natural_vs_restore1_img_maxdiff": 204.0,
+  "restore1_vs_restore2_qpos_maxdiff": 0.0,
+  "restore1_vs_restore2_img_maxdiff": 0.0,
+  "cross_env_after_restore_qpos_maxdiff": 0.05685555934906006,
+  "success_same": true,
+  "outcome": {
+   "snap0": {
+    "t": 15,
+    "natural": 1.0,
+    "restore1": 1.0,
+    "restore2": 1.0,
+    "env0_nat_r1_r2": [
+     true,
+     true,
+     true
+    ],
+    "same_env_r1_vs_r2": 1.0,
+    "nat_vs_r1_per_env": 1.0
+   },
+   "snap1": {
+    "t": 30,
+    "natural": 1.0,
+    "restore1": 1.0,
+    "restore2": 1.0,
+    "env0_nat_r1_r2": [
+     true,
+     true,
+     true
+    ],
+    "same_env_r1_vs_r2": 1.0,
+    "nat_vs_r1_per_env": 1.0
+   }
+  }
+ },
+ {
+  "episode_id": 180352,
+  "cross_env_qpos_maxdiff_before_snapshot": 0.00031948089599609375,
+  "restored_obs_image_maxdiff": 210.0,
+  "natural_vs_restore1_qpos_maxdiff": 0.01657697558403015,
+  "natural_vs_restore1_img_maxdiff": 239.0,
+  "restore1_vs_restore2_qpos_maxdiff": 0.0165787935256958,
+  "restore1_vs_restore2_img_maxdiff": 220.0,
+  "cross_env_after_restore_qpos_maxdiff": 0.02675643563270569,
+  "success_same": true,
+  "outcome": {
+   "snap0": {
+    "t": 15,
+    "natural": 1.0,
+    "restore1": 1.0,
+    "restore2": 1.0,
+    "env0_nat_r1_r2": [
+     true,
+     true,
+     true
+    ],
+    "same_env_r1_vs_r2": 1.0,
+    "nat_vs_r1_per_env": 1.0
+   },
+   "snap1": {
+    "t": 30,
+    "natural": 1.0,
+    "restore1": 1.0,
+    "restore2": 1.0,
+    "env0_nat_r1_r2": [
+     true,
+     true,
+     true
+    ],
+    "same_env_r1_vs_r2": 1.0,
+    "nat_vs_r1_per_env": 1.0
+   }
+  }
+ },
+ {
+  "episode_id": 461399,
+  "cross_env_qpos_maxdiff_before_snapshot": 0.0002506133168935776,
+  "restored_obs_image_maxdiff": 216.0,
+  "natural_vs_restore1_qpos_maxdiff": 0.0006485581398010254,
+  "natural_vs_restore1_img_maxdiff": 234.0,
+  "restore1_vs_restore2_qpos_maxdiff": 0.0,
+  "restore1_vs_restore2_img_maxdiff": 2.0,
+  "cross_env_after_restore_qpos_maxdiff": 0.0006391406059265137,
+  "success_same": true,
+  "outcome": {
+   "snap0": {
+    "t": 15,
+    "natural": 0.0,
+    "restore1": 0.0,
+    "restore2": 0.0,
+    "env0_nat_r1_r2": [
+     false,
+     false,
+     false
+    ],
+    "same_env_r1_vs_r2": 1.0,
+    "nat_vs_r1_per_env": 1.0
+   },
+   "snap1": {
+    "t": 30,
+    "natural": 0.0,
+    "restore1": 0.0,
+    "restore2": 0.0,
+    "env0_nat_r1_r2": [
+     false,
+     false,
+     false
+    ],
+    "same_env_r1_vs_r2": 1.0,
+    "nat_vs_r1_per_env": 1.0
+   }
+  }
+ },
+ {
+  "episode_id": 217269,
+  "cross_env_qpos_maxdiff_before_snapshot": 0.009658805094659328,
+  "restored_obs_image_maxdiff": 224.0,
+  "natural_vs_restore1_qpos_maxdiff": 0.14670957624912262,
+  "natural_vs_restore1_img_maxdiff": 248.0,
+  "restore1_vs_restore2_qpos_maxdiff": 0.12487161159515381,
+  "restore1_vs_restore2_img_maxdiff": 245.0,
+  "cross_env_after_restore_qpos_maxdiff": 0.07284194231033325,
+  "success_same": false,
+  "outcome": {
+   "snap0": {
+    "t": 15,
+    "natural": 0.875,
+    "restore1": 0.875,
+    "restore2": 1.0,
+    "env0_nat_r1_r2": [
+     true,
+     true,
+     true
+    ],
+    "same_env_r1_vs_r2": 0.875,
+    "nat_vs_r1_per_env": 1.0
+   },
+   "snap1": {
+    "t": 30,
+    "natural": 0.0,
+    "restore1": 0.0,
+    "restore2": 0.0,
+    "env0_nat_r1_r2": [
+     false,
+     false,
+     false
+    ],
+    "same_env_r1_vs_r2": 1.0,
+    "nat_vs_r1_per_env": 1.0
+   }
+  }
+ },
+ {
+  "episode_id": 761092,
+  "cross_env_qpos_maxdiff_before_snapshot": 2.485513687133789e-05,
+  "restored_obs_image_maxdiff": 218.0,
+  "natural_vs_restore1_qpos_maxdiff": 0.10155364871025085,
+  "natural_vs_restore1_img_maxdiff": 243.0,
+  "restore1_vs_restore2_qpos_maxdiff": 0.10226783901453018,
+  "restore1_vs_restore2_img_maxdiff": 241.0,
+  "cross_env_after_restore_qpos_maxdiff": 0.11800728738307953,
+  "success_same": false,
+  "outcome": {
+   "snap0": {
+    "t": 15,
+    "natural": 1.0,
+    "restore1": 1.0,
+    "restore2": 1.0,
+    "env0_nat_r1_r2": [
+     true,
+     true,
+     true
+    ],
+    "same_env_r1_vs_r2": 1.0,
+    "nat_vs_r1_per_env": 1.0
+   },
+   "snap1": {
+    "t": 30,
+    "natural": 1.0,
+    "restore1": 1.0,
+    "restore2": 1.0,
+    "env0_nat_r1_r2": [
+     true,
+     true,
+     true
+    ],
+    "same_env_r1_vs_r2": 1.0,
+    "nat_vs_r1_per_env": 1.0
+   }
+  }
+ },
+ {
+  "episode_id": 569810,
+  "cross_env_qpos_maxdiff_before_snapshot": 1.1846423149108887e-05,
+  "restored_obs_image_maxdiff": 181.0,
+  "natural_vs_restore1_qpos_maxdiff": 7.611513137817383e-05,
+  "natural_vs_restore1_img_maxdiff": 181.0,
+  "restore1_vs_restore2_qpos_maxdiff": 0.0,
+  "restore1_vs_restore2_img_maxdiff": 132.0,
+  "cross_env_after_restore_qpos_maxdiff": 3.460049629211426e-05,
+  "success_same": true,
+  "outcome": {
+   "snap0": {
+    "t": 15,
+    "natural": 0.0,
+    "restore1": 0.0,
+    "restore2": 0.0,
+    "env0_nat_r1_r2": [
+     false,
+     false,
+     false
+    ],
+    "same_env_r1_vs_r2": 1.0,
+    "nat_vs_r1_per_env": 1.0
+   },
+   "snap1": {
+    "t": 30,
+    "natural": 0.0,
+    "restore1": 0.0,
+    "restore2": 0.0,
+    "env0_nat_r1_r2": [
+     false,
+     false,
+     false
+    ],
+    "same_env_r1_vs_r2": 1.0,
+    "nat_vs_r1_per_env": 1.0
+   }
+  }
+ }
+]
