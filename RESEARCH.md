@@ -79,6 +79,7 @@ Point cloud 기반 gripper goal + frozen VLA(π0.5, lerobot/pi05_libero_finetune
 
 ## GPU 예산
 - 사용 가능: GPU 0 (RTX 4090). GPU 1·2는 다른 사용자 사용 중
+- 2026-11-18: GPU 0이 다른 사용자로 점유 → 사람 결정으로 T010·T011은 GPU 2. GPU 3은 VRAM이 일정 이상이면 문제가 있어 사용 금지.
 - 총 예산: 미정 — T001의 추론 시간 측정 후 본 실험 규모와 함께 정한다
 - pilot(T001+T002): 상한 10 GPU-h → 사용 3.9 GPU-h
 - (보류) UVA 본 실험 추정 400–700 GPU-h
