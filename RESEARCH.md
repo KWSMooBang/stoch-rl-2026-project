@@ -1,6 +1,7 @@
 # StochRL — RESEARCH
 
-## 병행 방향 (2026-11-18): Compositional Contrastive RL (사람 설계서)
+## 폐기 (2026-11-18, 사람 결정): Compositional Contrastive RL
+이유: T012에서 shortcut은 transport 방향이고 목적지 waypoint로 해결(H-dest 50/50), 후보 coverage 낮아 critic 재선택 No-Go.
 ~~T012 진단~~ (완료: shortcut은 transport 방향, H-dest 50/50, coverage 낮음 → critic은 목적지 추론 역할로 한정, VLM grounding과 비교 필요). 다음 단계 사람 결정 대기.
 원래 T012 질문: LIBERO-Goal 새 조합에서 목적지 shortcut의 phase(handover)와 후보 coverage. VLA-shortcut-exps goal15 결과·코드 읽기 재사용. GPU 2, 상한 3 GPU-h.
 
