@@ -1,6 +1,6 @@
 # StochRL — RESEARCH
 
-## 현재 방향 2 (2026-11-18): DA-CGC (Decision-Aware Counterfactual Goal-Consistency RL, 기말 프로젝트)
+## 현재 방향 2 (2026-11-18): DA-CGC — T013 관문 No-Go → 사람 결정 (a): T013b 5×5 + FiLM + demo warm start로 관문 재시도 (Decision-Aware Counterfactual Goal-Consistency RL, 기말 프로젝트)
 gridworld PoC, goal-conditioned Double DQN + gated counterfactual Q-ranking. T013: Phase 0–1(shortcut 재현) 관문 후 Phase 3 비교. CPU 위주, GPU 0 ≤1 GB, 상한 3 GPU-h.
 L1 수정: μ(oracle vs learned), B3 = gate 없는 정답 ranking, B6 = Q* 회귀 대조군, goal 인코딩 ablation, DQfD 비교.
 
