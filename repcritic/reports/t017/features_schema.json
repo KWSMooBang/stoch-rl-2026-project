@@ -1,0 +1,248 @@
+{
+ "vlm4_img_mean": {
+  "shape_per_decision": [
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 4096,
+  "description": "VLM prefix (gemma_2b) layer L, mean over 256 image tokens",
+  "dependence": "context z(o,l)"
+ },
+ "vlm4_img_grid4": {
+  "shape_per_decision": [
+   16,
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 65536,
+  "description": "VLM prefix layer L, image tokens 16x16 -> 4x4 avg pool (row-major)",
+  "dependence": "context z(o,l)"
+ },
+ "vlm4_txt_mean": {
+  "shape_per_decision": [
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 4096,
+  "description": "VLM prefix layer L, mean over valid prompt tokens",
+  "dependence": "context z(o,l)"
+ },
+ "vlm4_txt_last": {
+  "shape_per_decision": [
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 4096,
+  "description": "VLM prefix layer L, last valid prompt token",
+  "dependence": "context z(o,l)"
+ },
+ "vlm9_img_mean": {
+  "shape_per_decision": [
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 4096,
+  "description": "VLM prefix (gemma_2b) layer L, mean over 256 image tokens",
+  "dependence": "context z(o,l)"
+ },
+ "vlm9_img_grid4": {
+  "shape_per_decision": [
+   16,
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 65536,
+  "description": "VLM prefix layer L, image tokens 16x16 -> 4x4 avg pool (row-major)",
+  "dependence": "context z(o,l)"
+ },
+ "vlm9_txt_mean": {
+  "shape_per_decision": [
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 4096,
+  "description": "VLM prefix layer L, mean over valid prompt tokens",
+  "dependence": "context z(o,l)"
+ },
+ "vlm9_txt_last": {
+  "shape_per_decision": [
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 4096,
+  "description": "VLM prefix layer L, last valid prompt token",
+  "dependence": "context z(o,l)"
+ },
+ "vlm13_img_mean": {
+  "shape_per_decision": [
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 4096,
+  "description": "VLM prefix (gemma_2b) layer L, mean over 256 image tokens",
+  "dependence": "context z(o,l)"
+ },
+ "vlm13_img_grid4": {
+  "shape_per_decision": [
+   16,
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 65536,
+  "description": "VLM prefix layer L, image tokens 16x16 -> 4x4 avg pool (row-major)",
+  "dependence": "context z(o,l)"
+ },
+ "vlm13_txt_mean": {
+  "shape_per_decision": [
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 4096,
+  "description": "VLM prefix layer L, mean over valid prompt tokens",
+  "dependence": "context z(o,l)"
+ },
+ "vlm13_txt_last": {
+  "shape_per_decision": [
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 4096,
+  "description": "VLM prefix layer L, last valid prompt token",
+  "dependence": "context z(o,l)"
+ },
+ "vlm17_img_mean": {
+  "shape_per_decision": [
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 4096,
+  "description": "VLM prefix (gemma_2b) layer L, mean over 256 image tokens",
+  "dependence": "context z(o,l)"
+ },
+ "vlm17_img_grid4": {
+  "shape_per_decision": [
+   16,
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 65536,
+  "description": "VLM prefix layer L, image tokens 16x16 -> 4x4 avg pool (row-major)",
+  "dependence": "context z(o,l)"
+ },
+ "vlm17_txt_mean": {
+  "shape_per_decision": [
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 4096,
+  "description": "VLM prefix layer L, mean over valid prompt tokens",
+  "dependence": "context z(o,l)"
+ },
+ "vlm17_txt_last": {
+  "shape_per_decision": [
+   2048
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 4096,
+  "description": "VLM prefix layer L, last valid prompt token",
+  "dependence": "context z(o,l)"
+ },
+ "sig8_mean": {
+  "shape_per_decision": [
+   1152
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 2304,
+  "description": "SigLIP So400m layer L, mean over 256 patches (valid camera)",
+  "dependence": "context z(o)"
+ },
+ "sig8_grid4": {
+  "shape_per_decision": [
+   16,
+   1152
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 36864,
+  "description": "SigLIP layer L, 16x16 -> 4x4 avg pool",
+  "dependence": "context z(o)"
+ },
+ "sig17_mean": {
+  "shape_per_decision": [
+   1152
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 2304,
+  "description": "SigLIP So400m layer L, mean over 256 patches (valid camera)",
+  "dependence": "context z(o)"
+ },
+ "sig17_grid4": {
+  "shape_per_decision": [
+   16,
+   1152
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 36864,
+  "description": "SigLIP layer L, 16x16 -> 4x4 avg pool",
+  "dependence": "context z(o)"
+ },
+ "sig26_mean": {
+  "shape_per_decision": [
+   1152
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 2304,
+  "description": "SigLIP So400m layer L, mean over 256 patches (valid camera)",
+  "dependence": "context z(o)"
+ },
+ "sig26_grid4": {
+  "shape_per_decision": [
+   16,
+   1152
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 36864,
+  "description": "SigLIP layer L, 16x16 -> 4x4 avg pool",
+  "dependence": "context z(o)"
+ },
+ "ae_ctx_mean": {
+  "shape_per_decision": [
+   4,
+   1024
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 8192,
+  "description": "Action expert (gemma_300m) layers [4,9,13,17], extra suffix pass with x_t=0,t=1; mean over 8 action tokens",
+  "dependence": "context z(o,l) (candidate-independent)"
+ },
+ "ae_ctx_tok_last": {
+  "shape_per_decision": [
+   8,
+   1024
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 16384,
+  "description": "Action expert layer 17, same x_t=0 pass, all 8 action tokens",
+  "dependence": "context z(o,l) (candidate-independent)"
+ },
+ "ae_cand_mean": {
+  "shape_per_decision": [
+   4,
+   4,
+   1024
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 32768,
+  "description": "Action expert layers [4,9,13,17] at the 4 Euler denoise steps of the SAMPLED/executed chunk; mean over 8 tokens",
+  "dependence": "candidate-dependent z(o,l,a)"
+ },
+ "ae_cand_tok_last": {
+  "shape_per_decision": [
+   8,
+   1024
+  ],
+  "dtype": "float16",
+  "bytes_per_decision": 16384,
+  "description": "Action expert layer 17 at the last denoise step, all 8 tokens",
+  "dependence": "candidate-dependent z(o,l,a)"
+ }
+}

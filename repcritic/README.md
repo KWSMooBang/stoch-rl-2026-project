@@ -20,3 +20,9 @@ non-existent Vulkan ICD; `rc_common.setup_env_vars` sets `repcritic/vulkan/nvidi
 - `oracle_diversity.py` — N=32 candidate diversity + Oracle-N (cand vs same-chunk ctrl arm), restore tests.
 - `analyze_oracle.py` — tables (unbiased pass@N, episode bootstrap CIs).
 - `diag_restore.py`, `probe_gpu.py` — restore fidelity / GPU placement diagnostics.
+
+## E02 (T017) — `/outputs/StochRL/t017/summary_ko.md`, data `/workspace/stochrl_t017/`
+- `e02_common.py` — FeatPolicy (VLM/SigLIP/action-expert hooks, ctx pass x_t=0), privileged labels, batched snapshots.
+- `e02_rollout.py` — 500-episode buffer (70/15/15 by episode), features fp16, snapshots, label-only privileged files.
+- `e02_branch.py` — candidate-level branch labels (16 cand) + multi-continuation oracle (8x4), packed env batches.
+- `e02_analyze.py`, `e02_oracle_eb.py` — oracle E[max p]-E[p] estimators; `e02_card.py` — dataset card stats, feature index.

@@ -1,0 +1,408 @@
+{
+ "n_episodes": 500,
+ "n_decisions": 8000,
+ "split_seed": 7,
+ "ep_seed": 20261119,
+ "leak_episode_overlap": {
+  "train&val": 0,
+  "train&test": 0,
+  "val&test": 0
+ },
+ "leak_rows_split_consistent": true,
+ "splits": {
+  "train": {
+   "episodes": 350,
+   "decisions": 5600,
+   "success_once": 0.6142857142857143,
+   "success_at_end": 0.5942857142857143,
+   "n_success_episodes": 215,
+   "n_fail_episodes": 135,
+   "decisions_in_success_episodes": 3440,
+   "decisions_in_fail_episodes": 2160,
+   "decisions_pre_success": 3501,
+   "chunks_with_success_step": 2236,
+   "phase": {
+    "approach": 2349,
+    "transport": 563,
+    "post_grasp_lost": 546,
+    "grasp_contact": 127,
+    "placed": 2015
+   },
+   "phase_pre_success": {
+    "approach": 2320,
+    "transport": 551,
+    "post_grasp_lost": 504,
+    "grasp_contact": 126
+   }
+  },
+  "val": {
+   "episodes": 75,
+   "decisions": 1200,
+   "success_once": 0.49333333333333335,
+   "success_at_end": 0.48,
+   "n_success_episodes": 37,
+   "n_fail_episodes": 38,
+   "decisions_in_success_episodes": 592,
+   "decisions_in_fail_episodes": 608,
+   "decisions_pre_success": 835,
+   "chunks_with_success_step": 392,
+   "phase": {
+    "approach": 587,
+    "transport": 102,
+    "post_grasp_lost": 128,
+    "placed": 349,
+    "grasp_contact": 34
+   },
+   "phase_pre_success": {
+    "approach": 577,
+    "transport": 101,
+    "grasp_contact": 33,
+    "post_grasp_lost": 124
+   }
+  },
+  "test": {
+   "episodes": 75,
+   "decisions": 1200,
+   "success_once": 0.5466666666666666,
+   "success_at_end": 0.5333333333333333,
+   "n_success_episodes": 41,
+   "n_fail_episodes": 34,
+   "decisions_in_success_episodes": 656,
+   "decisions_in_fail_episodes": 544,
+   "decisions_pre_success": 795,
+   "chunks_with_success_step": 436,
+   "phase": {
+    "approach": 526,
+    "transport": 106,
+    "placed": 393,
+    "grasp_contact": 32,
+    "post_grasp_lost": 143
+   },
+   "phase_pre_success": {
+    "approach": 526,
+    "transport": 103,
+    "grasp_contact": 32,
+    "post_grasp_lost": 134
+   }
+  }
+ },
+ "scene_factor_overlap": {
+  "carrot": {
+   "train&val": 16,
+   "train&test": 16,
+   "val&test": 16,
+   "train": 16,
+   "val": 16,
+   "test": 16
+  },
+  "overlay": {
+   "train&val": 16,
+   "train&test": 16,
+   "val&test": 16,
+   "train": 16,
+   "val": 16,
+   "test": 16
+  },
+  "pose": {
+   "train&val": 5,
+   "train&test": 7,
+   "val&test": 3,
+   "train": 331,
+   "val": 74,
+   "test": 74
+  }
+ },
+ "all": {
+  "success_once": 0.586,
+  "success_at_end": 0.568
+ },
+ "array_shapes": {
+  "rgb": [
+   [
+    17,
+    480,
+    640,
+    3
+   ],
+   "uint8"
+  ],
+  "state": [
+   [
+    17,
+    8
+   ],
+   "float32"
+  ],
+  "noise": [
+   [
+    16,
+    8,
+    32
+   ],
+   "float32"
+  ],
+  "chunk_env": [
+   [
+    16,
+    8,
+    7
+   ],
+   "float32"
+  ],
+  "chunk_model": [
+   [
+    16,
+    8,
+    32
+   ],
+   "float32"
+  ],
+  "exec_env": [
+   [
+    16,
+    5,
+    7
+   ],
+   "float32"
+  ],
+  "step_reward": [
+   [
+    80
+   ],
+   "float32"
+  ],
+  "step_success": [
+   [
+    80
+   ],
+   "bool"
+  ],
+  "step_terminated": [
+   [
+    80
+   ],
+   "bool"
+  ],
+  "step_truncated": [
+   [
+    80
+   ],
+   "bool"
+  ],
+  "step_qpos": [
+   [
+    80,
+    8
+   ],
+   "float32"
+  ]
+ },
+ "transition_consistency_50ep": true,
+ "privileged_keys": {
+  "dec_pos_carrot": [
+   [
+    17,
+    3
+   ],
+   "float32"
+  ],
+  "dec_q_carrot": [
+   [
+    17,
+    4
+   ],
+   "float32"
+  ],
+  "dec_pos_plate": [
+   [
+    17,
+    3
+   ],
+   "float32"
+  ],
+  "dec_q_plate": [
+   [
+    17,
+    4
+   ],
+   "float32"
+  ],
+  "dec_pos_gripper": [
+   [
+    17,
+    3
+   ],
+   "float32"
+  ],
+  "dec_q_gripper": [
+   [
+    17,
+    4
+   ],
+   "float32"
+  ],
+  "dec_gripper_carrot_dist": [
+   [
+    17
+   ],
+   "float32"
+  ],
+  "dec_gripper_plate_dist": [
+   [
+    17
+   ],
+   "float32"
+  ],
+  "dec_carrot_plate_dist": [
+   [
+    17
+   ],
+   "float32"
+  ],
+  "dec_carrot_plate_rel": [
+   [
+    17,
+    3
+   ],
+   "float32"
+  ],
+  "dec_gripper_carrot_rel": [
+   [
+    17,
+    3
+   ],
+   "float32"
+  ],
+  "dec_ever_grasped": [
+   [
+    17
+   ],
+   "bool"
+  ],
+  "dec_consecutive_grasp_flag": [
+   [
+    17
+   ],
+   "bool"
+  ],
+  "dec_consec_grasp_count": [
+   [
+    17
+   ],
+   "int32"
+  ],
+  "dec_src_on_target": [
+   [
+    17
+   ],
+   "bool"
+  ],
+  "dec_grasping_now": [
+   [
+    17
+   ],
+   "bool"
+  ],
+  "dec_finger1_obj_force": [
+   [
+    17
+   ],
+   "float32"
+  ],
+  "dec_finger2_obj_force": [
+   [
+    17
+   ],
+   "float32"
+  ],
+  "dec_obj_plate_force": [
+   [
+    17
+   ],
+   "float32"
+  ],
+  "dec_contact_any_finger": [
+   [
+    17
+   ],
+   "bool"
+  ],
+  "dec_carrot_id": [
+   [
+    17
+   ],
+   "int32"
+  ],
+  "dec_overlay_id": [
+   [
+    17
+   ],
+   "int32"
+  ],
+  "dec_phase": [
+   [
+    17
+   ],
+   "<U16"
+  ],
+  "step_pos_carrot": [
+   [
+    80,
+    3
+   ],
+   "float32"
+  ],
+  "step_pos_plate": [
+   [
+    80,
+    3
+   ],
+   "float32"
+  ],
+  "step_pos_gripper": [
+   [
+    80,
+    3
+   ],
+   "float32"
+  ],
+  "step_grasping": [
+   [
+    80
+   ],
+   "bool"
+  ]
+ },
+ "feature_bytes_per_decision": 502528,
+ "feature_keys": 26,
+ "disk_GB": {
+  "episodes": 3.58,
+  "features": 4.02,
+  "privileged": 0.0,
+  "snapshots": 0.09
+ },
+ "branch": {
+  "state_select": {
+   "n_states": 197,
+   "n_episodes": 50,
+   "by_split": {
+    "train": 80,
+    "val": 57,
+    "test": 60
+   },
+   "split_consistent": true,
+   "n_oracle": 50
+  },
+  "state_select_ext": {
+   "n_states": 200,
+   "n_episodes": 50,
+   "by_split": {
+    "train": 80,
+    "val": 60,
+    "test": 60
+   },
+   "split_consistent": true,
+   "n_oracle": 0
+  }
+ }
+}
