@@ -1,0 +1,137 @@
+{
+ "gate": {
+  "best": "Geo_q_buf+br_f1.0",
+  "val_conc_1c": 0.5912162162162162,
+  "test_conc_1c": 0.5436551305403765,
+  "test_ci": [
+   0.5012016849570131,
+   0.5859162035453364
+  ],
+  "test_conc_or": 0.5648148148148149,
+  "test_or_ci": [
+   0.45127992633517494,
+   0.687728150651859
+  ],
+  "test_min_seed": 0.507832422586521,
+  "passed": true
+ },
+ "best_per_objective": {
+  "bce": "Geo_bce_buf_f1.0",
+  "nce": "Geo_nce_buf+br_f1.0",
+  "nce-k1": "Full_nce-k1_buf+br_f1.0",
+  "pair": "Full_pair_buf+br_f1.0",
+  "q": "Geo_q_buf+br_f1.0"
+ },
+ "best_per_input": {
+  "AECand": "AECand_pair_buf+br_f1.0",
+  "Full": "Full_nce_buf+br_f1.0",
+  "Fusion": "Fusion_q_buf+br_f1.0",
+  "Fusion+Full": "Fusion+Full_bce_buf_f1.0",
+  "Geo": "Geo_q_buf+br_f1.0",
+  "Goal": "Goal_q_buf+br_f1.0",
+  "PCA": "PCA_q_buf+br_f1.0",
+  "Phase": "Phase_bce_buf_f1.0",
+  "Proprio": "Proprio_nce_buf_f1.0",
+  "RandomProj": "RandomProj_q_buf+br_f1.0",
+  "Raw": "Raw_nce_buf+br_f1.0",
+  "Shuffle": "Shuffle_q_buf+br_f1.0"
+ },
+ "noise_ceiling_test": {
+  "conc_1c": 0.81216792798281,
+  "ci": [
+   0.7860673478290323,
+   0.8381777618796595
+  ],
+  "pick_gain_1c": 0.20154340277777777
+ },
+ "noise_ceiling_val": {
+  "conc_1c": 0.8196534785578801,
+  "ci": [
+   0.7911647852199003,
+   0.844553499317527
+  ],
+  "pick_gain_1c": 0.23923611111111115
+ },
+ "top10_val": [
+  {
+   "name": "Geo_q_buf+br_f1.0",
+   "val_conc_1c": 0.5912162162162162,
+   "val_conc_or": 0.6530612244897959,
+   "test_conc_1c": 0.5436551305403765,
+   "test_conc_1c_lo": 0.5012016849570131,
+   "test_conc_1c_hi": 0.5859162035453364
+  },
+  {
+   "name": "Fusion_q_buf+br_f1.0",
+   "val_conc_1c": 0.5848817567567567,
+   "val_conc_or": 0.6530612244897959,
+   "test_conc_1c": 0.5636915604128719,
+   "test_conc_1c_lo": 0.5241279675519812,
+   "test_conc_1c_hi": 0.6022919839731254
+  },
+  {
+   "name": "Geo_bce_buf_f1.0",
+   "val_conc_1c": 0.5792511261261261,
+   "val_conc_or": 0.663265306122449,
+   "test_conc_1c": 0.5581056466302368,
+   "test_conc_1c_lo": 0.5080376539255914,
+   "test_conc_1c_hi": 0.6074371659571545
+  },
+  {
+   "name": "Geo_q_buf_f1.0",
+   "val_conc_1c": 0.5791103603603603,
+   "val_conc_or": 0.6394557823129251,
+   "test_conc_1c": 0.5509411050394658,
+   "test_conc_1c_lo": 0.5053636368044996,
+   "test_conc_1c_hi": 0.6007519883233121
+  },
+  {
+   "name": "Geo_nce_buf+br_f1.0",
+   "val_conc_1c": 0.5726351351351351,
+   "val_conc_or": 0.7040816326530613,
+   "test_conc_1c": 0.5878567091681846,
+   "test_conc_1c_lo": 0.5413414584222672,
+   "test_conc_1c_hi": 0.6347085266369228
+  },
+  {
+   "name": "Geo_bce_buf+br_f1.0",
+   "val_conc_1c": 0.5720720720720721,
+   "val_conc_or": 0.6054421768707483,
+   "test_conc_1c": 0.5426836672738312,
+   "test_conc_1c_lo": 0.49554016070734647,
+   "test_conc_1c_hi": 0.5884497421009842
+  },
+  {
+   "name": "Fusion_nce_buf+br_f1.0",
+   "val_conc_1c": 0.5689752252252251,
+   "val_conc_or": 0.7006802721088435,
+   "test_conc_1c": 0.591378263509411,
+   "test_conc_1c_lo": 0.5427307818342768,
+   "test_conc_1c_hi": 0.6414706364381316
+  },
+  {
+   "name": "Fusion_bce_buf_f1.0",
+   "val_conc_1c": 0.5688344594594595,
+   "val_conc_or": 0.673469387755102,
+   "test_conc_1c": 0.5479052823315119,
+   "test_conc_1c_lo": 0.5023390086677146,
+   "test_conc_1c_hi": 0.5918059029045277
+  },
+  {
+   "name": "Proprio_nce_buf_f1.0",
+   "val_conc_1c": 0.5671452702702702,
+   "val_conc_or": 0.6564625850340136,
+   "test_conc_1c": 0.5313904068002429,
+   "test_conc_1c_lo": 0.4939766488950122,
+   "test_conc_1c_hi": 0.5701048973225661
+  },
+  {
+   "name": "Phase_bce_buf_f1.0",
+   "val_conc_1c": 0.5626407657657657,
+   "val_conc_or": 0.6530612244897959,
+   "test_conc_1c": 0.547176684881603,
+   "test_conc_1c_lo": 0.4984139063889168,
+   "test_conc_1c_hi": 0.6032490896111757
+  }
+ ]
+}

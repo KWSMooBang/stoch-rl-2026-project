@@ -1,0 +1,37 @@
+{
+ "Geo_q_buf+br_f1.0": {
+  "grasp_after": 0.636,
+  "neg_gc_after": 0.531,
+  "neg_cp_after": 0.511
+ },
+ "Fusion_q_buf+br_f1.0": {
+  "grasp_after": 0.789,
+  "neg_gc_after": 0.529,
+  "neg_cp_after": 0.53
+ },
+ "Fusion_nce_buf+br_f1.0": {
+  "grasp_after": 0.617,
+  "neg_gc_after": 0.577,
+  "neg_cp_after": 0.526
+ },
+ "Full_bce_buf+br_f1.0": {
+  "grasp_after": 0.839,
+  "neg_gc_after": 0.567,
+  "neg_cp_after": 0.516
+ },
+ "Raw_q_buf+br_f1.0": {
+  "grasp_after": 0.655,
+  "neg_gc_after": 0.556,
+  "neg_cp_after": 0.563
+ },
+ "Fusion_pair_buf+br_f1.0": {
+  "grasp_after": 0.672,
+  "neg_gc_after": 0.53,
+  "neg_cp_after": 0.523
+ },
+ "label_vs_success": {
+  "grasp_after": 0.528,
+  "neg_gc_after": 0.57,
+  "neg_cp_after": 0.481
+ }
+}
