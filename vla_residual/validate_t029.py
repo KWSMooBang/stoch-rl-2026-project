@@ -126,7 +126,9 @@ def run_eval_hold(mode, n, batch):
     rows = []
     t0 = time.time()
     for b in range(n // batch):
-        env.reset()
+        # A reset without env_idx restarts the eval id cursor (RLinf eval semantics); env_idx = all slots keeps it,
+        # so batch b gets held-out ids [b*batch, (b+1)*batch). (eval.json of 2026-11-20 predates this fix: ids 0..63 x2.)
+        env.reset() if b == 0 else env.reset(options={"env_idx": torch.arange(batch)})
         eids = env.eids.clone()
         R, HE, HA = [], [], []
         for d in range(V.T_DEC):
@@ -161,9 +163,9 @@ def run_eval_hold(mode, n, batch):
                 wall_s=time.time() - t0, episodes=rows)
 
 
-def mode_eval(n, batch):
+def mode_eval(n, batch, modes=("b0", "upper")):
     res = {}
-    for m in ("b0", "upper"):
+    for m in modes:
         res[m] = run_eval_hold(m, n, batch)
         print(json.dumps({k: v for k, v in res[m].items() if k != "episodes"}, indent=1), flush=True)
     return res
@@ -201,7 +203,7 @@ def rollout(env, seed, std):
                 states=torch.stack(ST), eids=eids, ps0=ps0, obj=obj, ret=inf[0]["episode"]["return"].cpu())
 
 
-def mode_train(batch, seed):
+def mode_train(batch, seed, skip_hold=False):
     from vla_residual import core as V
     from vla_residual.validate import make_cfg
 
@@ -214,43 +216,54 @@ def mode_train(batch, seed):
         cfg.seed = seed
         return mod.ResidualVLAEnv(cfg, batch, 0, 1, None)
 
+    if skip_hold:  # bitwise diagnostic only; keep the hold results of the previous run
+        out = {k: v for k, v in json.load(open(OUT / "train.json")).items() if k == "hold"}
+        out["hold_from"] = "previous train.json (same code)"
     # 1) hold reward on the train split
-    env = mk(V, "hold")
-    h = rollout(env, seed, std)
-    rew, dones = to_rlinf(h["r"], h["te"] | h["tr"])
-    sc, adv, lm = rlinf_grpo_scores(rew, dones)
-    cw = h["ps0"]["carrot_w"].view(-1, G, 3); pw = h["ps0"]["plate_w"].view(-1, G, 3)
-    end = h["he"][-1].float()
-    out["hold"] = dict(
-        no_termination=bool(not h["te"].any()), truncation_only_at_16=bool(h["tr"][-1].all() and not h["tr"][:-1].any()),
-        sum_reward_eq_success_at_end=bool(torch.equal(h["r"].sum(0), end)),
-        env_return_eq_success_at_end=bool(torch.allclose(h["ret"], end)),
-        rlinf_grpo_score_eq_success_at_end=bool(torch.allclose(sc, end)),
-        loss_mask_all_16=bool(lm.all()),
-        grpo_group_eids_equal=bool((h["eids"].view(-1, G) == h["eids"].view(-1, G)[:, :1]).all()),
-        grpo_group_same_object=bool((h["obj"].view(-1, G) == h["obj"].view(-1, G)[:, :1]).all()),
-        grpo_within_group_max_diff_m=float(max((cw - cw[:, :1]).abs().max(), (pw - pw[:, :1]).abs().max())),
-        grpo_between_group_mean_diff_m=float((cw[1:, 0] - cw[:-1, 0]).norm(dim=1).mean()),
-        grpo_group_success_at_end=[float(x) for x in end.view(-1, G).mean(1)],
-        grpo_group_success_once=[float(x) for x in h["so"][-1].float().view(-1, G).mean(1)],
-        n_episodes_with_loss=int((h["r"] < 0).any(0).sum()), reward_values=sorted(set(h["r"].flatten().tolist())),
-        obs_has_no_success_flag="states = [feat 2048 | qpos 8 | base chunk 35 | t/T] (unchanged from T022)",
-        obs_dim=int(h["states"].shape[-1]))
-    print(json.dumps(out["hold"], indent=1), flush=True)
-    del env
+    if not skip_hold:
+        env = mk(V, "hold")
+        h = rollout(env, seed, std)
+        rew, dones = to_rlinf(h["r"], h["te"] | h["tr"])
+        sc, adv, lm = rlinf_grpo_scores(rew, dones)
+        cw = h["ps0"]["carrot_w"].view(-1, G, 3); pw = h["ps0"]["plate_w"].view(-1, G, 3)
+        end = h["he"][-1].float()
+        out["hold"] = dict(
+            no_termination=bool(not h["te"].any()), truncation_only_at_16=bool(h["tr"][-1].all() and not h["tr"][:-1].any()),
+            sum_reward_eq_success_at_end=bool(torch.equal(h["r"].sum(0), end)),
+            env_return_eq_success_at_end=bool(torch.allclose(h["ret"], end)),
+            rlinf_grpo_score_eq_success_at_end=bool(torch.allclose(sc, end)),
+            loss_mask_all_16=bool(lm.all()),
+            grpo_group_eids_equal=bool((h["eids"].view(-1, G) == h["eids"].view(-1, G)[:, :1]).all()),
+            grpo_group_same_object=bool((h["obj"].view(-1, G) == h["obj"].view(-1, G)[:, :1]).all()),
+            grpo_within_group_max_diff_m=float(max((cw - cw[:, :1]).abs().max(), (pw - pw[:, :1]).abs().max())),
+            grpo_between_group_mean_diff_m=float((cw[1:, 0] - cw[:-1, 0]).norm(dim=1).mean()),
+            grpo_group_success_at_end=[float(x) for x in end.view(-1, G).mean(1)],
+            grpo_group_success_once=[float(x) for x in h["so"][-1].float().view(-1, G).mean(1)],
+            n_episodes_with_loss=int((h["r"] < 0).any(0).sum()), reward_values=sorted(set(h["r"].flatten().tolist())),
+            obs_has_no_success_flag="states = [feat 2048 | qpos 8 | base chunk 35 | t/T] (unchanged from T022)",
+            obs_dim=int(h["states"].shape[-1]))
+        print(json.dumps(out["hold"], indent=1), flush=True)
+        del env
     # 2) default reward (first_success) vs T022 code 47a4d76: bitwise on the same rollout
     old = _old_core()
     runs = {}
-    for name, mod in (("t022_ref", old), ("t029_default", V), ("t022_ref_again", old)):
+    for name, mod in (("t022_ref", old), ("t029_default", V), ("t022_ref_again", old), ("t029_default_again", V)):
         env = mk(mod)
         runs[name] = rollout(env, seed, std)
         del env
 
     def eq(a, b):
         return {k: bool(torch.equal(runs[a][k], runs[b][k])) for k in ("r", "te", "tr", "eids", "states")}
-    out["bitwise"] = dict(control_t022_vs_t022=eq("t022_ref", "t022_ref_again"),
-                          t022_vs_t029_default=eq("t022_ref", "t029_default"))
-    print(json.dumps(out["bitwise"], indent=1), flush=True)
+    def maxdiff(a, b):  # per obs block: feature 2048 | qpos 8 | base chunk 35 | t
+        d = (runs[a]["states"] - runs[b]["states"]).abs()
+        blocks = dict(feat=d[..., :2048], qpos=d[..., 2048:2056], base=d[..., 2056:2091], t=d[..., 2091:])
+        return {k: float(v.max()) for k, v in blocks.items()} | dict(
+            frac_decisions_feat_differs=float((blocks["feat"].amax(-1) > 0).float().mean()))
+    pairs = [("t022_ref", "t022_ref_again"), ("t029_default", "t029_default_again"), ("t022_ref", "t029_default"),
+             ("t022_ref_again", "t029_default_again"), ("t022_ref_again", "t029_default")]
+    out["bitwise"] = {f"{a}_vs_{b}": eq(a, b) for a, b in pairs}
+    out["states_maxabs"] = {f"{a}_vs_{b}": maxdiff(a, b) for a, b in pairs}
+    print(json.dumps(out["bitwise"], indent=1), json.dumps(out["states_maxabs"], indent=1), flush=True)
     out["batch"] = batch; out["seed"] = seed
     return out
 
@@ -261,16 +274,20 @@ def main():
     ap.add_argument("--n", type=int, default=128)
     ap.add_argument("--batch", type=int, default=64)
     ap.add_argument("--seed", type=int, default=11)
+    ap.add_argument("--skip_hold", action="store_true")
+    ap.add_argument("--modes", default="b0,upper")
+    ap.add_argument("--tag", default="")
     a = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     if a.mode == "units":
         res = mode_units()
     elif a.mode == "eval":
-        res = mode_eval(a.n, a.batch)
+        res = mode_eval(a.n, a.batch, tuple(a.modes.split(",")))
     else:
-        res = mode_train(a.batch, a.seed)
+        res = mode_train(a.batch, a.seed, a.skip_hold)
     res["gpu"] = __import__("os").environ.get("CUDA_VISIBLE_DEVICES")
-    Path(OUT, f"{a.mode}.json").write_text(json.dumps(res, indent=1))
+    res["rc_policy_mb"] = __import__("os").environ.get("RC_POLICY_MB")
+    Path(OUT, f"{a.mode}{a.tag}.json").write_text(json.dumps(res, indent=1))
     if a.mode == "units":
         print(json.dumps(res["checks"], indent=1))
 
