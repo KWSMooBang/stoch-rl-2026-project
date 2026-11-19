@@ -54,10 +54,15 @@ def main():
     win = []
     for i, r in enumerate(tr):
         steps += 5 * r["dec"]
-        win.append(r["success_once"])
+        win.append(r)
         if len(win) == 200 or i == len(tr) - 1:
-            train_curve.append(dict(episodes=i + 1, env_steps=steps, wall_s=round(r["wall"] - t0, 1),
-                                    success_once=float(np.mean(win))))
+            pt = dict(episodes=i + 1, env_steps=steps, wall_s=round(r["wall"] - t0, 1),
+                      success_once=float(np.mean([w["success_once"] for w in win])))
+            if "success_at_end" in r:  # T029 hold reward: train episodes run all 16 decisions
+                pt["success_at_end"] = float(np.mean([w["success_at_end"] for w in win]))
+                pt["return"] = float(np.mean([w["ret"] for w in win]))
+                pt["lost_per_episode"] = float(np.mean([w["n_lost"] for w in win]))
+            train_curve.append(pt)
             win = []
     total_train_steps = steps
     # eval curve: one point per evaluation (128 held-out eps); env steps = train steps finished before it ended
@@ -93,8 +98,23 @@ def main():
         except (IndexError, ValueError):
             pass
     vt = [int(x) for x in (read(os.path.join(a.run_dir, "vram_trace.txt"), "") or "").split() if x.isdigit()]
+    # T024/T029: AULC of held-out success curves (trapezoid over env steps incl. the B0 point at 0, / final env steps)
+    aulc = aulc_end = None
+    if len(curve) >= 2 and curve[-1]["env_steps"] > 0:
+        xs = np.array([c["env_steps"] for c in curve], float)
+        aulc = float(np.trapz([c["success_once"] for c in curve], xs) / xs[-1])
+        aulc_end = float(np.trapz([c["success_at_end"] for c in curve], xs) / xs[-1])
+    hold = None
+    if tr and "ret" in tr[0]:
+        thirds = np.array_split(np.arange(len(tr)), 3)
+        hold = dict(n_episodes=len(tr),
+                    return_eq_success_at_end=bool(all(abs(r["ret"] - float(r["success_at_end"])) < 1e-6 for r in tr)),
+                    train_success_once_by_third=[float(np.mean([tr[i]["success_once"] for i in ix])) for ix in thirds if len(ix)],
+                    train_success_at_end_by_third=[float(np.mean([tr[i]["success_at_end"] for i in ix])) for ix in thirds if len(ix)],
+                    train_lost_per_episode_by_third=[float(np.mean([tr[i]["n_lost"] for i in ix])) for ix in thirds if len(ix)])
     m = {
-        "task": "T022", "algo": a.algo, "seed": a.seed, "return_code": a.rc, "config": os.path.basename(a.cfg),
+        "task": os.path.basename(os.path.normpath(a.run_dir)).split("-")[0].upper(),
+        "aulc_once": aulc, "aulc_end": aulc_end, "hold": hold, "algo": a.algo, "seed": a.seed, "return_code": a.rc, "config": os.path.basename(a.cfg),
         "config_overrides": (read(os.path.join(a.run_dir, "t022_overrides.txt"), "") or "").splitlines()[3:],
         "heldout_success_once": final["success_once"] if final else None,
         "heldout_success_at_end": final["success_at_end"] if final else None,

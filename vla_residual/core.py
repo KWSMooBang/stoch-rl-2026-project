@@ -11,6 +11,12 @@ Observation "states" (float32, dim OBS_DIM):
     cfg.vla_residual.expert_label is True; the student MLP reads only "states".
 Reward: sparse success. Train: +1 on the decision in which success first becomes true, terminated=True (no bootstrap).
         Truncation after T=16 decisions (80 sim steps) -> truncated=True (bootstrap where the algorithm does).
+T029:   cfg.vla_residual.reward selects the train reward (default "first_success" = T022 above, bit-identical):
+        "hold" (H1)       r_t = h_t - h_{t-1}, h_t = success at the LAST sim step of decision t, h_0 = 0
+                          -> +1 when success is (re)gained, -1 when it is lost; episode sum = success_at_end.
+        "hold_dense" (H2) r_t = h_t / T.
+        Both never terminate: every train episode runs T=16 decisions and is truncated at the 16th (as in eval).
+        The success flag is used only for the reward, never in "states".
 Eval:   ignore_terminations=True -> every episode runs 16 decisions; success_once / success_at_end recorded.
 Episode ids: train ids are drawn uniformly from all 802,816 ids minus the held-out set; eval ids are the fixed
         held-out list (T020 test episodes, first N_EVAL), assigned to env slots block by block.
@@ -298,6 +304,17 @@ class ScriptedExpert:
         return self.last.clone()
 
 
+# ---------------------------------------------------------------- T029 success-hold reward
+def hold_reward(prev, cur, mode, T):
+    """prev / cur: success state h_{t-1} / h_t (bool [B]) at decision boundaries.
+    hold (H1): h_t - h_{t-1}  (sum over t = h_T = success_at_end)    hold_dense (H2): h_t / T."""
+    if mode == "hold":
+        return cur.float() - prev.float()
+    if mode == "hold_dense":
+        return cur.float() / T
+    raise ValueError(f"expected reward mode hold|hold_dense, got {mode!r}")
+
+
 # ---------------------------------------------------------------- RLinf-compatible env
 class ResidualVLAEnv:
     """RLinf env (ManiskillEnv interface subset used by EnvWorker): reset / chunk_step / properties."""
@@ -321,7 +338,9 @@ class ResidualVLAEnv:
         self.alpha = torch.tensor([vr.a_pos] * 3 + [vr.a_rot] * 3 + [vr.a_grip], dtype=torch.float32)
         self.squash = str(vr.squash)  # tanh | clip
         self.expert_label = bool(vr.get("expert_label", False))
-        self.expert_exec = float(vr.get("expert_exec", 0.0))  # 1.0 -> execute expert residual (validation only)
+        self.expert_exec = float(vr.get("expert_exec", 0.0))
+        self.reward_mode = str(vr.get("reward", "first_success"))  # T029: first_success | hold | hold_dense
+        assert self.reward_mode in ("first_success", "hold", "hold_dense"), f"unknown reward {self.reward_mode!r}"  # 1.0 -> execute expert residual (validation only)
         ecfg = C.env_cfg(num_envs)
         ecfg.max_episode_steps = self.max_dec * C.K + 1  # we handle truncation ourselves
         ecfg.init_params.max_episode_steps = self.max_dec * C.K + 1
@@ -412,12 +431,16 @@ class ResidualVLAEnv:
         self.success_once = torch.zeros(B, dtype=torch.bool, device=self.dev)
         self._logged = torch.zeros(B, dtype=torch.bool)
         self.returns = torch.zeros(B, device=self.dev)
+        self.held = torch.zeros(B, dtype=torch.bool, device=self.dev)  # T029: h_{t-1}
+        self.n_lost = torch.zeros(B, dtype=torch.long, device=self.dev)
 
     def _reset_metrics(self, mask):
         self._logged[mask.cpu()] = False
         self.success_once[mask] = False
         self.returns[mask] = 0
         self.dec[mask] = 0
+        self.held[mask] = False
+        self.n_lost[mask] = 0
 
     # --- episode ids
     def _draw_eids(self, n):
@@ -544,10 +567,17 @@ class ResidualVLAEnv:
         succ_end = info["success"].to(self.dev).bool()
         self.dec += 1
         newly = succ_any & ~self.success_once
-        reward = newly.float()
+        if self.reward_mode == "first_success":
+            reward = newly.float()
+        else:
+            reward = hold_reward(self.held, succ_end, self.reward_mode, self.max_dec)
+            self.n_lost += (self.held & ~succ_end).long()
+            self.held = succ_end.clone()
         self.success_once |= succ_any
         self.returns += reward
-        if self.ignore_terminations:
+        if self.reward_mode != "first_success":
+            term = torch.zeros(B, dtype=torch.bool, device=self.dev)  # T029: success never ends a train episode
+        elif self.ignore_terminations:
             term = torch.zeros(B, dtype=torch.bool, device=self.dev)
         else:
             term = newly.clone()
@@ -563,8 +593,10 @@ class ResidualVLAEnv:
                                                    success_once=bool(self.success_once[i]),
                                                    success_at_end=bool(succ_end[i])) for i in fin])
         else:
+            extra = (lambda i: dict(success_at_end=bool(succ_end[i]), ret=round(float(self.returns[i]), 6),
+                                    n_lost=int(self.n_lost[i]))) if self.reward_mode != "first_success" else (lambda i: {})
             self._log("train_episodes.jsonl", [dict(eid=int(self.eids[i]), success_once=bool(self.success_once[i]),
-                                                    dec=int(self.dec[i])) for i in fin if not self._logged[i]])
+                                                    dec=int(self.dec[i]), **extra(i)) for i in fin if not self._logged[i]])
             for i in fin:
                 self._logged[i] = True
         # base chunk + features for the post-step obs of every slot
