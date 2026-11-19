@@ -93,8 +93,35 @@ def main():
         except (IndexError, ValueError):
             pass
     vt = [int(x) for x in (read(os.path.join(a.run_dir, "vram_trace.txt"), "") or "").split() if x.isdigit()]
+    # T024: AULC of held-out success_once (trapezoid over env steps incl. the B0 point at 0, / final env steps)
+    aulc = aulc_end = None
+    if len(curve) >= 2 and curve[-1]["env_steps"] > 0:
+        xs = np.array([c["env_steps"] for c in curve], float)
+        aulc = float(np.trapz([c["success_once"] for c in curve], xs) / xs[-1])
+        aulc_end = float(np.trapz([c["success_at_end"] for c in curve], xs) / xs[-1])
+    shaping = None
+    if tr and "shp_sum" in tr[0]:
+        def st(key, rows):
+            v = np.array([r[key] for r in rows], float)
+            return dict(mean=float(v.mean()), sd=float(v.std()), p05=float(np.percentile(v, 5)),
+                        p95=float(np.percentile(v, 95))) if len(v) else None
+        thirds = np.array_split(np.arange(len(tr)), 3)
+        succ = [r for r in tr if r["term"]]
+        trunc = [r for r in tr if not r["term"]]
+        sparse_per_dec = len(succ) / max(sum(r["dec"] for r in tr), 1)
+        shaping = dict(
+            n_episodes=len(tr), sparse_reward_per_decision=sparse_per_dec,
+            shaping_abs_per_decision=float(sum(r["shp_abs"] for r in tr) / max(sum(r["dec"] for r in tr), 1)),
+            episode_shaping_sum=st("shp_sum", tr), episode_shaping_sum_success=st("shp_sum", succ),
+            episode_shaping_sum_fail=st("shp_sum", trunc), phi0=st("phi0", tr),
+            success_step_reward=st("r_end", succ), success_step_phi_prev=st("phi_prev_end", succ),
+            trunc_step_phi_next=st("phi_next_end", trunc),
+            residual_abs_mean=st("res_abs", tr),
+            residual_abs_mean_by_third=[float(np.mean([tr[i]["res_abs"] for i in ix])) for ix in thirds if len(ix)],
+            train_success_by_third=[float(np.mean([tr[i]["success_once"] for i in ix])) for ix in thirds if len(ix)])
     m = {
-        "task": "T022", "algo": a.algo, "seed": a.seed, "return_code": a.rc, "config": os.path.basename(a.cfg),
+        "task": os.path.basename(os.path.normpath(a.run_dir)).split("-")[0].upper(),
+        "aulc_once": aulc, "aulc_end": aulc_end, "shaping": shaping, "algo": a.algo, "seed": a.seed, "return_code": a.rc, "config": os.path.basename(a.cfg),
         "config_overrides": (read(os.path.join(a.run_dir, "t022_overrides.txt"), "") or "").splitlines()[3:],
         "heldout_success_once": final["success_once"] if final else None,
         "heldout_success_at_end": final["success_at_end"] if final else None,

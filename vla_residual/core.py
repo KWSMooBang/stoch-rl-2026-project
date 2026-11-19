@@ -123,6 +123,7 @@ class VLABase:
         acts = apply_output_transform(m._output_transform_fn, {"actions": macts, "state": observation.state},
                                       action_chunk=None)["actions"].to(torch.float32)[:, : C.K]
         f = torch.cat(feats, 0)
+        self.last_feat_raw = f  # unstandardized (T018 cache convention; T024 potential input)
         f = ((f - self.f_mean) / self.f_std).clamp(-5, 5)
         return acts, f
 
@@ -359,6 +360,21 @@ class ResidualVLAEnv:
         self.reset_log = []
         self.log_dir = os.environ.get("VR_LOG_DIR")
         self.eval_count = -1
+        # T024 PBRS (train split only): r' = r + beta (gamma Phi(s') - Phi(s)), Phi(s')=phi_term on success.
+        pb = vr.get("pbrs", None)
+        self.pbrs = None
+        if pb is not None and str(pb.get("potential", "none")) != "none" and self.split == "train":
+            from vla_residual.potential import Potential
+
+            self.pbrs = dict(potential=str(pb.potential), beta=float(pb.beta), gamma=float(pb.gamma),
+                             phi_term=float(pb.get("phi_term", 1.0)))
+            self.pot = Potential(self.pbrs["potential"], device=self.dev)
+            self.phi = torch.zeros(B, device=self.dev)
+            self.ended = torch.zeros(B, dtype=torch.bool, device=self.dev)
+            self.shp_sum = torch.zeros(B, device=self.dev)
+            self.shp_abs = torch.zeros(B, device=self.dev)
+            self.phi0 = torch.zeros(B, device=self.dev)
+            self.res_abs = torch.zeros(B, device=self.dev)
         self._t0 = __import__("time").time()
 
     def _log(self, name, rows):
@@ -456,10 +472,12 @@ class ResidualVLAEnv:
         if self.a_base is None:
             self.a_base = torch.zeros(B, C.K, ACT_DIM, device=self.dev)
             self.feat = torch.zeros(B, FEAT_DIM, device=self.dev)
+            self.feat_raw = torch.zeros(B, FEAT_DIM, device=self.dev)
             self.qpos = torch.zeros(B, QPOS_DIM, device=self.dev)
         di = idx.to(self.dev)
         self.a_base[di] = acts.to(self.dev)
         self.feat[di] = f.to(self.dev)
+        self.feat_raw[di] = self.vla.last_feat_raw.to(self.dev)
         self.qpos[di] = wobs["states"][di].to(self.dev).float() if len(idx) < B else wobs["states"].to(self.dev).float()
 
     def _obs(self, emask=None):
@@ -503,6 +521,13 @@ class ResidualVLAEnv:
         self._reset_metrics(mask)
         self.expert.reset(mask)
         self._make_obs(wobs, None if len(idx) == B else idx)
+        if self.pbrs is not None:
+            phi = self.potential()
+            self.phi = torch.where(mask, phi, self.phi)
+            self.phi0 = torch.where(mask, phi, self.phi0)
+            self.ended[mask] = False
+            for t in (self.shp_sum, self.shp_abs, self.res_abs):
+                t[mask] = 0
         self._obs_cache = self._obs(mask)
         return {k: v.clone() for k, v in self._obs_cache.items()}, {}
 
@@ -553,6 +578,10 @@ class ResidualVLAEnv:
             term = newly.clone()
         trunc = (self.dec >= self.max_dec) & ~term
         dones = term | trunc
+        # base chunk + features for the post-step obs of every slot (before shaping: Phi(s') needs them)
+        self._make_obs(wobs)
+        if self.pbrs is not None:
+            reward, shp, rinfo = self._shape(reward, term, dones, s)
         infos = {"success": succ_end, "episode": {
             "success_once": self.success_once.clone(), "success_at_end": succ_end.clone(),
             "return": self.returns.clone(), "episode_len": (self.dec * C.K).clone(),
@@ -563,12 +592,15 @@ class ResidualVLAEnv:
                                                    success_once=bool(self.success_once[i]),
                                                    success_at_end=bool(succ_end[i])) for i in fin])
         else:
+            ext = (lambda i: {}) if self.pbrs is None else (lambda i: dict(
+                shp_sum=round(float(self.shp_sum[i]), 5), shp_abs=round(float(self.shp_abs[i]), 5),
+                phi0=round(float(self.phi0[i]), 5), phi_prev_end=round(float(rinfo["phi_prev"][i]), 5),
+                phi_next_end=round(float(rinfo["phi_next"][i]), 5), r_end=round(float(reward[i]), 5),
+                term=bool(term[i]), res_abs=round(float(self.res_abs[i] / max(int(self.dec[i]), 1)), 5)))
             self._log("train_episodes.jsonl", [dict(eid=int(self.eids[i]), success_once=bool(self.success_once[i]),
-                                                    dec=int(self.dec[i])) for i in fin if not self._logged[i]])
+                                                    dec=int(self.dec[i]), **ext(i)) for i in fin if not self._logged[i]])
             for i in fin:
                 self._logged[i] = True
-        # base chunk + features for the post-step obs of every slot
-        self._make_obs(wobs)
         obs = self._obs()
         if dones.any() and self.auto_reset:
             final_obs = {k: v.clone() for k, v in obs.items()}
@@ -584,6 +616,30 @@ class ResidualVLAEnv:
         self._obs_cache = {k: v.clone() for k, v in obs.items()}
         rew = reward[:, None]
         return [obs], rew, term[:, None], trunc[:, None], [infos]
+
+    def potential(self):
+        return self.pot(feat_raw=self.feat_raw, qpos=self.qpos, dec=self.dec)
+
+    def _shape(self, reward, term, dones, s):
+        """Called after the sim step and _make_obs(post-step obs), before auto-reset. Steps after an episode ended
+        (auto_reset=False tail) get no shaping. beta == 0 returns the sparse reward object unchanged."""
+        from vla_residual.potential import shaped_reward
+
+        pb = self.pbrs
+        active = ~self.ended
+        phi_prev = self.phi.clone()
+        phi_next = self.potential()
+        r2, shp = shaped_reward(reward, phi_prev, phi_next, term, pb["beta"], pb["gamma"], pb["phi_term"], active)
+        if pb["beta"] == 0.0:
+            r2 = reward
+        self.shp_sum += shp
+        self.shp_abs += shp.abs()
+        self.res_abs += torch.where(active, s.abs().mean(1), torch.zeros_like(shp))
+        self.ended |= dones
+        self.phi = phi_next
+        self._last_rinfo = dict(phi_prev=phi_prev, phi_next=phi_next, sparse=reward, shaped=r2, shp=shp, active=active,
+                                term=term.clone(), trunc=(dones & ~term).clone(), dec=self.dec.clone())
+        return r2, shp, dict(phi_prev=phi_prev, phi_next=phi_next, sparse=reward, shp=shp, active=active)
 
     def _interrupted(self):
         """The shared scene was used by the other wrapper (evaluation) since our last step: the in-flight episodes are
