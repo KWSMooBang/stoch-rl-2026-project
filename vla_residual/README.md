@@ -10,3 +10,9 @@ Design, validation and budget: `design_ko.md` (copy of `/outputs/StochRL/t022/de
 - `run.sh <algo> <seed> [overrides]` — GPU 0/1 guard, dedicated Ray head, patch 0001, metrics.
 - `validate.py --mode {b0,expert,upper,units}` — pre-training checks (single process).
 - `submit_chain.sh` — harness submission only when GPU 0/1 is free; resubmits refused runs as `-rN`.
+
+## T029 success-hold (branch exp/success-hold)
+- `env.train.vla_residual.reward`: `first_success` (default, T022) | `hold` (H1: r_t = h_t - h_{t-1}, no success termination,
+  return = success_at_end) | `hold_dense` (H2: h_t / T). Design/validation/budget: `design_t029_ko.md`.
+- `run_t029.sh <ppo|grpo> <seed>` (GPU 0 only), `submit_t029.sh` (GPU-0 chain, budget guard 3.0), `validate_t029.py`,
+  `gate_t029.py`. NOTE: `feat_stats_vlm17_img_mean.npz` is git-ignored; copy it into a new worktree.
