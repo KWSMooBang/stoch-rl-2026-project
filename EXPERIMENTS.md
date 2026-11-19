@@ -45,3 +45,6 @@
 ## T014 (2026-11-18) AAPR 2D pushing — 부분 지지
 | T014 | 2026-11-18 | 2D 관성 pushing + SAC, 방법 10 × 바람 4 × seed 5 | ar1 AUC: aapr1 0.81, mh 0.75, M0 0.69, prog 0.65, aug 0.87 / ar1_hi SR: aapr1 0.64, M0 0.28, prog 0.20, aug 0.98 / bias·iid SR ≈1.00 | 부분 지지: one-step AAPR > progress·M0(지속 바람), 그러나 multi-horizon < one-step, 계산량 맞춘 aug가 전 조건 최고 | 1.91 |
 | T013b | 2026-11-18 | 5×5 + FiLM + demo warm start로 관문 재시도 | balanced SR_seen 0.99(Go), SER ≤0.003(No-Go), held-out 실패 96–100% 시간 초과, B6 FiLM unseen 0.00 | 관문 No-Go: shortcut이 아니라 조합 일반화 실패 | 0.96 |
+
+## T023 (2026-11-19) value audit (B·C 0단계) — B 조건부 Go / C low-V 조건부 Go
+| T023 | 2026-11-19 | frozen VLA V̂(vlm17, Platt) potential·gate audit, T017 buffer CPU | test AUROC 0.90, 같은 t 0.81, 같은 phase×t 0.70(raw 0.52–0.54), ECE 0.043. ΔΦ→성공 AUROC(같은 t) 0.60 vs time 0.50·shuffled 0.48, raw_q와 차이 +0.04[−0.01,0.09]. Φ_T=0 β=1 성공 chunk 순보상 0.15(T008c 재현) → Φ_T=1 1.14. low-V gate recall 0.94/FPR 0.02(d=4), drop 선행 0.09 < random 0.76 | B: Φ_T=1, β∈{0,0.1,0.3,1}; C: ΔV gate No-Go, rescueability audit 선행 | 0 |
