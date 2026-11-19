@@ -49,7 +49,20 @@ def per_state(Y, rng, nperm=1000, reps=None):
         perm = np.argsort(rng.rand(S, n * m), axis=1)
         Yp = np.take_along_axis(flat, perm, 1).reshape(S, n, m).mean(2)
         null += (Yp.max(1) - Yp.mean(1)) / nperm
-    out = dict(p_mean=ph.mean(1), naive=naive, null=null, excess=naive - null, max_p=ph.max(1))
+    # CRN-aware null (sensitivity, added after seeing CRN correlation): permute candidate labels WITHIN each
+    # replicate column, which keeps the shared-continuation (replicate) effect.
+    null_rep = np.zeros(S)
+    for _ in range(nperm):
+        perm = np.argsort(rng.rand(S, n, m), axis=1)
+        Yp = np.take_along_axis(Y, perm, 1).mean(2)
+        null_rep += (Yp.max(1) - Yp.mean(1)) / nperm
+    out = dict(p_mean=ph.mean(1), naive=naive, null=null, excess=naive - null, max_p=ph.max(1),
+               null_rep=null_rep, excess_rep=naive - null_rep)
+    if m > 1:  # two-way (candidate x replicate) variance component of candidates
+        resid = Y - Y.mean(2, keepdims=True) - Y.mean(1, keepdims=True) + Y.mean((1, 2), keepdims=True)
+        ms_e = (resid ** 2).sum((1, 2)) / ((n - 1) * (m - 1))
+        ms_c = m * ph.var(1, ddof=1)
+        out["var_between_2way"] = (ms_c - ms_e) / m
     if m >= 2:
         h = m // 2
         A, B = list(range(h)), list(range(h, 2 * h))
@@ -97,15 +110,25 @@ def summarize(Y, rng, reps=None, nboot=2000, with_bb=True):
     P = {k: per_state(Y[:, c], rng, reps=reps) for k, c in SETS.items()}
     for k, ps in P.items():
         d = {m: float(ps[m].mean()) for m in ps}
-        d["ci"] = {m: ci(ps[m], rng, nboot) for m in ("excess", "naive", "split_gain", "split_value", "max_p", "p_mean")
+        d["ci"] = {m: ci(ps[m], rng, nboot) for m in ("excess", "excess_rep", "naive", "split_gain", "split_value", "max_p", "p_mean")
                    if m in ps}
         d["icc"] = icc(ps)
+        if "var_between_2way" in ps:
+            d["icc_2way"] = icc(dict(ps, var_between=ps["var_between_2way"]))
         if with_bb:
             d["G_betabinom"] = G_betabinom(ps["p_mean"], d["icc"], len(SETS[k]), rng, 2000)
+            d["G_betabinom_2way"] = G_betabinom(ps["p_mean"], d["icc_2way"], len(SETS[k]), rng, 2000)
+            # bootstrap CI of G (resample states, recompute pooled ICC)
+            gs = []
+            for _ in range(100):
+                idx = rng.randint(0, len(ps["p_mean"]), len(ps["p_mean"]))
+                sub = {q: v[idx] for q, v in ps.items()}
+                gs.append(G_betabinom(sub["p_mean"], icc(sub), len(SETS[k]), rng, 500))
+            d["ci"]["G_betabinom"] = [float(np.percentile(gs, 2.5)), float(np.percentile(gs, 97.5))]
         res[k] = d
     for a, b in (("MIX8", "VLA8"), ("MIX8", "VLA4"), ("VLA8", "VLA4")):
         dd = {}
-        for m in ("excess", "naive", "split_gain", "split_value", "var_between", "max_p", "p_mean"):
+        for m in ("excess", "excess_rep", "naive", "split_gain", "split_value", "var_between", "var_between_2way", "max_p", "p_mean"):
             if m in P[a]:
                 v = P[a][m] - P[b][m]
                 dd[m] = dict(mean=float(v.mean()), ci=ci(v, rng, nboot))
@@ -203,7 +226,7 @@ def main():
             continue
         e = dict(S=int(m.sum()))
         for name in SETS:
-            e[name] = {q: float(P[name][q][m].mean()) for q in ("p_mean", "excess", "split_gain", "max_p")}
+            e[name] = {q: float(P[name][q][m].mean()) for q in ("p_mean", "excess", "excess_rep", "split_gain", "split_value", "max_p", "var_between_2way")}
         dv = P["MIX8"]["excess"][m] - P["VLA8"]["excess"][m]
         e["d_excess_MIX8_VLA8"] = dict(mean=float(dv.mean()), ci=ci(dv, rng, 1000))
         ds = P["MIX8"]["split_value"][m] - P["VLA8"]["split_value"][m]
@@ -244,8 +267,8 @@ def main():
     pd.DataFrame(rk).sort_values("MIX8_excess", ascending=False).to_csv(out / "ranking_by_gap.csv", index=False)
     plot(res, P, strata, Y, out / "oracle_headroom.png")
     show = {k: res[k] for k in ("n_states", "n_branches", "decision", "crn")}
-    show["sets"] = {k: {q: round(res["main"][k][q], 4) for q in ("p_mean", "naive", "null", "excess", "split_gain",
-                                                                  "split_value", "max_p", "icc", "G_betabinom")}
+    show["sets"] = {k: {q: round(res["main"][k][q], 4) for q in ("p_mean", "naive", "null", "excess", "null_rep", "excess_rep", "split_gain",
+                                                                  "split_value", "max_p", "icc", "icc_2way", "G_betabinom", "G_betabinom_2way")}
                     for k in SETS}
     print(json.dumps(show, indent=1))
 
@@ -270,11 +293,11 @@ def plot(res, P, strata, Y, path):
                 v = e[name]["excess"] if e else np.nan
                 c = [v, v]
             vals.append(v); lo.append(v - c[0]); hi.append(c[1] - v)
-        ax[0].bar(x + (j - 1) * w, vals, w, color=col[name], label=name, yerr=[lo, hi] if True else None,
+        ax[0].bar(x + (j - 1) * w, vals, w, color=col[name], label=name, ecolor="k", yerr=[[l if i == 0 else 0 for i, l in enumerate(lo)], [h if i == 0 else 0 for i, h in enumerate(hi)]],
                   capsize=2, error_kw=dict(lw=0.8))
     ax[0].set_xticks(x)
     ax[0].set_xticklabels([f"{g}\n(n={res['n_states'] if g == 'all' else res['by_stratum'].get(g, {}).get('S', 0)})"
-                           for g in groups], fontsize=7)
+                           for g in groups], fontsize=7, rotation=35, ha="right")
     ax[0].axhline(0, color="k", lw=0.6)
     ax[0].set_title("noise-corrected oracle gap (excess = naive − perm null)\nCI only for 'all'", fontsize=9)
     ax[0].legend(fontsize=8, frameon=False)
