@@ -1,0 +1,14 @@
+diff --git a/rlinf/models/embodiment/mlp_policy/mlp_policy.py b/rlinf/models/embodiment/mlp_policy/mlp_policy.py
+index eacf3a84..61cd58fe 100644
+--- a/rlinf/models/embodiment/mlp_policy/mlp_policy.py
++++ b/rlinf/models/embodiment/mlp_policy/mlp_policy.py
+@@ -174,7 +174,8 @@ class MLPPolicy(nn.Module, BasePolicy):
+                 )
+             target_actions = target_actions.reshape_as(pred_actions)
+ 
+-        return F.mse_loss(pred_actions, target_actions, reduction="none")
++        # T021 fix: DAgger worker calls .backward()/.item() on this -> must be a scalar
++        return F.mse_loss(pred_actions, target_actions, reduction="none").mean()
+ 
+     def sac_forward(self, obs, **kwargs):
+         feat = self.backbone(obs["states"])
