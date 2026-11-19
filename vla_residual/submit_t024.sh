@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
-# T024 submit chain (same rules as submit_chain.sh): submit only when GPU 0 or 1 is free and nothing of ours is
-# queued; run.sh refuses any other GPU (exit 3) -> resubmitted as <run_id>-rN. GPU 3 never used.
+# T024 submit chain, GPU 0 ONLY (human approval 2026-11-19: budget 5.5 GPU-h, GPU 1/3 forbidden).
+# One run at a time: submit only when GPU 0 is free and none of ours is queued/running (harness picks the lowest
+# free index -> GPU 0). run_t024.sh refuses any other GPU (exit 3) -> resubmitted as <run_id>-rN.
 # Budget guard: skip a run if used (results.tsv t024-* gpu_h + T024_PRE_GPUH) + estimate > T024_BUDGET.
 # usage: nohup setsid vla_residual/submit_t024.sh "t024-vla-b10-s0:vla:1.0:0:1.3" ... > chain.log 2>&1 &
 set -uo pipefail
 WT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$WT"
 OUT=/outputs/StochRL
-BUDGET=${T024_BUDGET:-6.5}
-PRE=${T024_PRE_GPUH:-0}
-MAXPAR=${T024_MAXPAR:-2}
+BUDGET=${T024_BUDGET:-5.5}
+PRE=${T024_PRE_GPUH:-0.3}
+MAXPAR=${T024_MAXPAR:-1}
 
 log() { echo "[$(date -Is)] $*"; }
-free_01() { nvidia-smi --query-gpu=index,memory.used --format=csv,noheader,nounits | \
-    awk -F', ' '($1==0||$1==1) && $2<1000 {f=1} END {print f+0}'; }
+free_0() { nvidia-smi --query-gpu=index,memory.used --format=csv,noheader,nounits | \
+    awk -F', ' '$1==0 && $2<1000 {f=1} END {print f+0}'; }
 count() {  # count <status regex>
   local n=0 s
   for s in "$OUT"/runs/t024-*/STATUS; do
@@ -28,7 +29,7 @@ for spec in "$@"; do
   IFS=: read -r BASE POT BETA SEED HOURS <<< "$spec"
   n=0
   while true; do
-    until [ "$(count 'queued|running')" -lt "$MAXPAR" ] && [ "$(count queued)" -eq 0 ] && [ "$(free_01)" -eq 1 ]; do sleep 60; done
+    until [ "$(count 'queued|running')" -lt "$MAXPAR" ] && [ "$(count queued)" -eq 0 ] && [ "$(free_0)" -eq 1 ]; do sleep 60; done
     U=$(used_gpuh)
     if awk -v u="$U" -v h="$HOURS" -v b="$BUDGET" 'BEGIN{exit !(u+h>b)}'; then
       log "SKIP $BASE: budget used $U + est $HOURS > $BUDGET"; break
