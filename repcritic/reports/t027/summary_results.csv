@@ -1,0 +1,109 @@
+exp,quantity,value,lo,hi,n,source,status
+E01,success_once frozen pi0.5 (3 seeds x 30 ep),0.533,0.431,0.633,90,t016/summary_ko.md,baseline
+E01,success_at_end,0.511,0.41,0.612,90,t016/summary_ko.md,baseline
+E01,latency batch1 ms/decision,141,,,,t016/summary_ko.md,baseline
+E01,OraclePass@16 pre-success,0.61,0.45,0.78,59,t016/summary_ko.md,diagnostic
+E01,cand16-ctrl16 pre-success,0.034,0.0,0.08,59,t016/summary_ko.md,diagnostic
+E02,dataset success_once all 500 ep,0.586,,,500,t017/summary_ko.md,data
+E02,ICC (candidate share of outcome variance),0.21,,,50x8x4,t017/summary_ko.md,diagnostic
+E02,E[max p_i]-E[p_i] beta-binomial,0.118,0.074,0.154,50 states,t017/summary_ko.md,diagnostic
+E02,excess over noise null,0.035,0.013,0.062,50 states,t017/summary_ko.md,diagnostic;perm p=0.0005
+E02,split-half selector gain,0.039,-0.015,0.099,50 states,t017/summary_ko.md,diagnostic
+E02,Pass@1/Pass@4/Pass@16 (397 states),0.553/0.689/0.748,,,397,t017/summary_ko.md,diagnostic
+E03,probe succ_pre AUC best (vlm17_img_mean),0.894,0.86,0.93,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe succ_pre AUC gain vs proprio+t (0.817),0.077,0.044,0.11,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe succ_pre AUC within-t best (vlm17_img_mean),0.8,0.74,0.86,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe succ_pre AUC within-t gain vs proprio+t (0.646),0.154,0.087,0.222,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe succk15_pre AUC best (vlm13_img_mean),0.971,0.96,0.98,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe succk15_pre AUC gain vs proprio+t (0.861),0.111,0.069,0.158,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe value R2 best (vlm13_img_mean),0.731,0.67,0.78,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe value R2 gain vs proprio+t (0.142),0.589,0.5,0.68,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe value_pre R2 best (vlm17_img_mean),0.478,0.39,0.56,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe value_pre R2 gain vs proprio+t (0.225),0.253,0.18,0.32,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe geo_rel R2 best (vlm9_img_grid4),0.943,0.93,0.96,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe geo_rel R2 gain vs proprio+t (0.34),0.603,0.57,0.64,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe phase4 macro-F1 best (vlm9_txt_mean),0.695,0.64,0.74,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe phase4 macro-F1 gain vs proprio+t (0.413),0.282,0.22,0.35,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe grasp AUC best (vlm9_img_mean),0.989,0.98,0.99,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E03,probe grasp AUC gain vs proprio+t (0.874),0.114,0.07,0.17,75 test ep,t018/summary_ko.md,exploratory(val-selected)
+E04,gate: Geo_q_buf+br test conc_1c,0.544,0.501,0.586,120 states,t019/summary_ko.md,"prereg(gate, passed at boundary)"
+E04,noise ceiling conc_1c,0.81,0.79,0.84,120 states,t019/summary_ko.md,diagnostic
+E06,latency batch1 ms: B0/Random8/ActOnly8/Critic8,266/782/788/827,,,,t020/bench_latency.json,cost
+cost,GPU-h T016/T017/T018/T019/T020/T027,2.5/3.2/0/0.95/1.5/0,,,,summaries,cost
+E04,q_Full_frac0.1_auroc_within_t,0.7579923205674266,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Full_frac0.1_conc_1c,0.5513054037644202,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Full_frac0.25_auroc_within_t,0.7860180486625813,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Full_frac0.25_conc_1c,0.5632058287795992,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Full_frac0.5_auroc_within_t,0.8103229097585425,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Full_frac0.5_conc_1c,0.5621129326047359,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Full_frac1.0_auroc_within_t,0.8169690156331327,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Full_frac1.0_conc_1c,0.5816636308439587,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Fusion_frac0.1_auroc_within_t,0.8021879184245305,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Fusion_frac0.1_conc_1c,0.5599271402550091,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Fusion_frac0.25_auroc_within_t,0.8031529595268125,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Fusion_frac0.25_conc_1c,0.5647844565877352,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Fusion_frac0.5_auroc_within_t,0.8052732163023218,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Fusion_frac0.5_conc_1c,0.5702489374620522,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Fusion_frac1.0_auroc_within_t,0.8151239848096755,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Fusion_frac1.0_conc_1c,0.5636915604128719,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_FusionLC_frac0.1_auroc_within_t,0.7608483566284221,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_FusionLC_frac0.1_conc_1c,0.567698846387371,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_FusionLC_frac0.25_auroc_within_t,0.7915209397541695,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_FusionLC_frac0.25_conc_1c,0.5761991499696418,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_FusionLC_frac0.5_auroc_within_t,0.8039789972376031,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_FusionLC_frac0.5_conc_1c,0.5675774134790528,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_FusionLC_frac1.0_auroc_within_t,0.8151239848096755,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_FusionLC_frac1.0_conc_1c,0.5636915604128719,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_RandomProj_frac0.1_auroc_within_t,0.7301535680028451,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_RandomProj_frac0.1_conc_1c,0.5396478445658773,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_RandomProj_frac0.25_auroc_within_t,0.7434203490269754,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_RandomProj_frac0.25_conc_1c,0.54802671523983,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_RandomProj_frac0.5_auroc_within_t,0.748547499510044,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_RandomProj_frac0.5_conc_1c,0.5483910139647845,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_RandomProj_frac1.0_auroc_within_t,0.7610050624739069,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_RandomProj_frac1.0_conc_1c,0.5589556769884639,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Raw_frac0.1_auroc_within_t,0.5646133608085714,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Raw_frac0.1_conc_1c,0.5316332726168792,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Raw_frac0.25_auroc_within_t,0.6243770766642394,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Raw_frac0.25_conc_1c,0.5352762598664238,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Raw_frac0.5_auroc_within_t,0.6366443715398405,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Raw_frac0.5_conc_1c,0.5459623557984213,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Raw_frac1.0_auroc_within_t,0.6785236733925218,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,q_Raw_frac1.0_conc_1c,0.5557984213721918,,,3 seeds,t019/critic_eval.csv,exploratory(curve)
+E04,test_conc_1c:Geo_q_buf+br,0.5436551305403765,0.5012016849570131,0.5859162035453364,120 states,t019/critic_eval.csv|action_only_baselines.json|selection.json,prereg(gate)
+E04,test_conc_1c:Fusion_q_buf+br,0.5636915604128719,0.5241279675519812,0.6022919839731254,120 states,t019/critic_eval.csv|action_only_baselines.json|selection.json,exploratory
+E04,test_conc_1c:Full_q_buf+br,0.5816636308439587,0.5376544111811011,0.6227152535490041,120 states,t019/critic_eval.csv|action_only_baselines.json|selection.json,exploratory
+E04,test_conc_1c:Geo_nce_buf+br,0.5878567091681846,0.5413414584222672,0.6347085266369228,120 states,t019/critic_eval.csv|action_only_baselines.json|selection.json,exploratory
+E04,test_conc_1c:Fusion_nce_buf+br,0.591378263509411,0.5427307818342768,0.6414706364381316,120 states,t019/critic_eval.csv|action_only_baselines.json|selection.json,exploratory
+E04,test_conc_1c:Full_bce_buf+br,0.5725561627200971,0.5273724151076329,0.616694086683677,120 states,t019/critic_eval.csv|action_only_baselines.json|selection.json,exploratory
+E04,test_conc_1c:RandomProj_q_buf+br,0.5589556769884639,0.518479428383032,0.5982952228437742,120 states,t019/critic_eval.csv|action_only_baselines.json|selection.json,exploratory
+E04,test_conc_1c:Raw_q_buf+br,0.5557984213721918,0.5034263989395102,0.6131876021011807,120 states,t019/critic_eval.csv|action_only_baselines.json|selection.json,exploratory
+E04,test_conc_1c:Raw_bce_buf+br,0.5373406193078324,0.49175627793181154,0.5872470108212732,120 states,t019/critic_eval.csv|action_only_baselines.json|selection.json,exploratory
+E04,test_conc_1c:AECand_pair_buf+br,0.5419550698239223,0.4935887880059535,0.5933590151528693,120 states,t019/critic_eval.csv|action_only_baselines.json|selection.json,exploratory
+E04,test_conc_1c:action-only ridge (no state),0.5431693989071038,0.5016580489210476,0.5861183120937423,120 states,t019/critic_eval.csv|action_only_baselines.json|selection.json,exploratory
+E04,test_conc_1c:noise ceiling (true p_i),0.81216792798281,0.7860673478290323,0.8381777618796595,120 states,t019/critic_eval.csv|action_only_baselines.json|selection.json,exploratory
+E01/E02/E04/E06,chunk_contrib:T016 OraclePass@16 − Pass@1,0.207,0.15,0.27,,t016/t017/t019/t020 summaries (verbatim),diagnostic
+E01/E02/E04/E06,chunk_contrib:T016 cand16 − ctrl16 (chunk share),0.034,0.0,0.08,,t016/t017/t019/t020 summaries (verbatim),diagnostic
+E01/E02/E04/E06,chunk_contrib:T017 E[max p_i]−E[p_i] (perfect critic),0.11835243374897299,0.07387787359898326,0.1542128981711745,,t016/t017/t019/t020 summaries (verbatim),diagnostic
+E01/E02/E04/E06,chunk_contrib:T017 excess over noise null,0.035,0.013,0.062,,t016/t017/t019/t020 summaries (verbatim),diagnostic
+E01/E02/E04/E06,chunk_contrib:T017 split-half selector,0.039,-0.015,0.099,,t016/t017/t019/t020 summaries (verbatim),diagnostic
+E01/E02/E04/E06,chunk_contrib:T019 pick gain: noise ceiling,0.20154,,,,t016/t017/t019/t020 summaries (verbatim),diagnostic
+E01/E02/E04/E06,chunk_contrib:T019 pick gain: Geo_q critic,0.019,,,,t016/t017/t019/t020 summaries (verbatim),diagnostic
+E01/E02/E04/E06,chunk_contrib:T020 Critic8 − B0 (closed loop),0.073,-0.013,0.167,,t016/t017/t019/t020 summaries (verbatim),prereg(primary)
+E01/E02/E04/E06,chunk_contrib:T020 Critic8 − ActOnly8 (critic share),0.007,-0.087,0.1,,t016/t017/t019/t020 summaries (verbatim),prereg(primary)
+E06,success_once:B0,0.5466666666666666,0.46682631163294025,0.6241763820467925,150,t020/rerank_metrics.csv,prereg
+E06,success_once:Random8,0.5733333333333334,0.49332380166580925,0.6496804312594855,150,t020/rerank_metrics.csv,prereg
+E06,success_once:ActOnly8,0.6133333333333333,0.5334964294452139,0.6875101123484232,150,t020/rerank_metrics.csv,prereg
+E06,success_once:Critic8,0.62,0.5402429290748867,0.6937639975301408,150,t020/rerank_metrics.csv,prereg
+E06,success_once:CriticApp8,0.6533333333333333,0.5742027248462458,0.7248061258157337,150,t020/rerank_metrics.csv,prereg
+E06,paired_diff_success_once:Critic8-ActOnly8,0.006666666666666667,-0.08666666666666667,0.1,150,t020/rerank_metrics.csv (Holm: e09_report.py),prereg(primary);mcnemar_p=1.0000;holm_p=1.000
+E06,paired_diff_success_once:Critic8-B0,0.07333333333333333,-0.013333333333333334,0.16666666666666666,150,t020/rerank_metrics.csv (Holm: e09_report.py),prereg(primary);mcnemar_p=0.1608;holm_p=1.000
+E06,paired_diff_success_once:Critic8-Random8,0.04666666666666667,-0.04666666666666667,0.14,150,t020/rerank_metrics.csv (Holm: e09_report.py),prereg(secondary);mcnemar_p=0.3916;holm_p=1.000
+E06,paired_diff_success_once:ActOnly8-B0,0.06666666666666667,-0.013333333333333334,0.14666666666666667,150,t020/rerank_metrics.csv (Holm: e09_report.py),prereg(secondary);mcnemar_p=0.1539;holm_p=1.000
+E06,paired_diff_success_once:Random8-B0,0.02666666666666667,-0.05333333333333334,0.10666666666666667,150,t020/rerank_metrics.csv (Holm: e09_report.py),prereg(secondary);mcnemar_p=0.6358;holm_p=1.000
+E06,paired_diff_success_once:CriticApp8-B0,0.10666666666666667,0.02666666666666667,0.18666666666666668,150,t020/rerank_metrics.csv (Holm: e09_report.py),prereg(secondary);mcnemar_p=0.0195;holm_p=0.156
+E06,paired_diff_success_once:CriticApp8-ActOnly8,0.04,-0.04666666666666667,0.12666666666666668,150,t020/rerank_metrics.csv (Holm: e09_report.py),prereg(secondary);mcnemar_p=0.4614;holm_p=1.000
+E06,paired_diff_success_once:ActOnly8-Random8,0.04,-0.04666666666666667,0.12666666666666668,150,t020/rerank_metrics.csv (Holm: e09_report.py),prereg(secondary);mcnemar_p=0.4408;holm_p=1.000
+E04,Geo_q ascent20 dz (T019 csv),23.061401397513837,,,1920 rows,t019/critic_eval.csv,diagnostic
+E04,"Geo_q ascent20 dz (rerun, mean of 3 seeds)",23.06140964570427,21.21275111171586,25.286017312237618,1920 rows,e09_hacking_case.py,diagnostic(recomputed)
+E04,Geo_q ascent20 win (rerun),0.9911458333333333,0.9807291666666667,0.9989583333333333,1920 rows,e09_hacking_case.py,diagnostic(recomputed)

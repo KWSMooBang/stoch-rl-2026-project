@@ -1,0 +1,34 @@
+{
+ "diff:Critic8-ActOnly8": {
+  "mcnemar_p": 1.0,
+  "holm_p": 1.0
+ },
+ "diff:Critic8-B0": {
+  "mcnemar_p": 0.16077960181198847,
+  "holm_p": 1.0
+ },
+ "diff:Critic8-Random8": {
+  "mcnemar_p": 0.3916029105474905,
+  "holm_p": 1.0
+ },
+ "diff:ActOnly8-B0": {
+  "mcnemar_p": 0.1538599441628321,
+  "holm_p": 1.0
+ },
+ "diff:Random8-B0": {
+  "mcnemar_p": 0.6358280026288412,
+  "holm_p": 1.0
+ },
+ "diff:CriticApp8-B0": {
+  "mcnemar_p": 0.019520472782460274,
+  "holm_p": 0.1561637822596822
+ },
+ "diff:CriticApp8-ActOnly8": {
+  "mcnemar_p": 0.4613911821367651,
+  "holm_p": 1.0
+ },
+ "diff:ActOnly8-Random8": {
+  "mcnemar_p": 0.44079906734259566,
+  "holm_p": 1.0
+ }
+}
