@@ -9,6 +9,10 @@ configs set, so stock configs behave exactly as before:
   (obs key "expert_u" is added to RLinf's env->rollout observation whitelist)
   rollout.expert_model.vr_expert_obs_key -> "expert" MLP returns env_obs[key] as its action (scripted privileged
                                             expert computed in the env; DAgger labels). Student never sees the key.
+  actor.model.vr_gate {tau,temp,scale,init_logstd} -> T036 G2 learned competence gate (vla_residual/gate_model.py): cfg
+                                            obs_dim/action_dim are the E2 values + 1; the 7-D residual MLP is the
+                                            E2 MLP on states[:, :obs_dim-1]; the 8th action mean is a 3-parameter
+                                            linear gate logit on [V_hat, t/16] initialised to G1.
   algorithm.vr_anchor (float)            -> SAC/CrossQ actor loss += vr_anchor * mean ||tanh(mu)||^2 (T011 lesson)
 """
 from __future__ import annotations
@@ -50,7 +54,13 @@ def _patch_mlp():
     orig_get = mp.get_model
 
     def get_model(cfg, torch_dtype=torch.bfloat16):
-        model = orig_get(cfg, torch_dtype)
+        built = None
+        if cfg.get("vr_gate", None) is not None:
+            from vla_residual.gate_model import build_plain, finish
+
+            model = built = build_plain(cfg, orig_get, torch_dtype)
+        else:
+            model = orig_get(cfg, torch_dtype)
         vi = cfg.get("vr_init", None)
         if vi is not None and isinstance(model, MLPPolicy):
             with torch.no_grad():
@@ -66,6 +76,8 @@ def _patch_mlp():
                         y = 2 * (float(ls) - lo) / (hi - lo) - 1
                         model.actor_logstd.weight.zero_()
                         model.actor_logstd.bias.fill_(math.atanh(max(-0.999, min(0.999, y))))
+        if built is not None:  # after vr_init (which addresses the plain MLP's actor_mean / actor_logstd)
+            model = finish(cfg, built)
         key = cfg.get("vr_expert_obs_key", None)
         if key is not None and model is not None:
             model.vr_expert_obs_key = str(key)

@@ -9,6 +9,10 @@ Observation "states" (float32, dim OBS_DIM):
     The VLM feature is computed in the same pi0.5 forward that produced the base chunk (hook, observe-only).
     T032 E0: cfg.vla_residual.zero_vlm=True replaces the 2048 feature dims of "states" by constant 0 (same OBS_DIM,
     same MLP). Only the returned obs changes: the pi0.5 forward, base chunk, self.feat / feat_raw stay untouched.
+    T036 gate: cfg.vla_residual.gate.mode in {one, fixed, learned} multiplies the squashed residual of the whole
+    chunk (all 7 dims, gripper included) by a per-decision g in [0, 1] (vla_residual/gate.py). mode=learned appends
+    V_hat as one more "states" column (dim OBS_DIM + 1; the actor MLP still reads the first OBS_DIM dims) and takes the
+    gate logit from an 8th action dim.
     Extra key "expert_u" (privileged scripted-expert residual label, in the same space as u) is present only when
     cfg.vla_residual.expert_label is True; the student MLP reads only "states".
 Reward: sparse success. Train: +1 on the decision in which success first becomes true, terminated=True (no bootstrap).
@@ -380,6 +384,27 @@ class ResidualVLAEnv:
             self.shp_abs = torch.zeros(B, device=self.dev)
             self.phi0 = torch.zeros(B, device=self.dev)
             self.res_abs = torch.zeros(B, device=self.dev)
+        # T036 competence gate: delta = alpha * g * s(u); g from the frozen T023 V_hat(vla, Platt) of the decision state.
+        gt = vr.get("gate", None)
+        self.gate = None
+        if gt is not None and str(gt.get("mode", "none")) != "none":
+            from vla_residual.potential import Potential
+
+            from vla_residual.gate import PRED_ROOT
+
+            # vhat: "t023" = T023 V_hat (pre-success states, label success_once); "end" = V_hat_end (all states,
+            # label success_at_end; vla_residual/fit_vhat_end.py)
+            self.gate = dict(mode=str(gt.mode), tau=float(gt.get("tau", 0.0)), temp=float(gt.get("temp", 1.0)),
+                             vhat=str(gt.get("vhat", "t023")))
+            assert self.gate["mode"] in ("one", "fixed", "learned"), self.gate
+            assert self.squash == "tanh" and self.expert_exec == 0 and not vr.get("expert_only", False)
+            self.gpot = Potential("vla", device=self.dev, root=PRED_ROOT[self.gate["vhat"]])
+            self.g_sum = torch.zeros(B, device=self.dev)   # per-episode sums over decisions (train log)
+            self.v_sum = torch.zeros(B, device=self.dev)
+            self.s_sum = torch.zeros(B, device=self.dev)   # mean_dims |tanh u|
+            self.gs_sum = torch.zeros(B, device=self.dev)  # mean_dims |g tanh u|
+            self.prev_now = torch.zeros(B, dtype=torch.bool, device=self.dev)  # success flag at the decision state
+            print(f"[vla_residual] gate {self.gate} ({self.split})", flush=True)
         self._t0 = __import__("time").time()
 
     def _log(self, name, rows):
@@ -490,11 +515,17 @@ class ResidualVLAEnv:
         feat = torch.zeros_like(self.feat) if self.zero_vlm else self.feat
         st = torch.cat([feat, self.qpos, (self.a_base / BASE_SCALE.to(self.dev)).reshape(B, -1),
                         (self.dec.float() / self.max_dec)[:, None]], 1)
+        if self.gate is not None and self.gate["mode"] == "learned":
+            st = torch.cat([st, self.vhat()[:, None]], 1)  # column OBS_DIM: gate-head input only
         out = {"states": st.float()}
         if self.expert_label or self.expert_exec > 0:
             self._a_exp = self.expert(priv_state(self.inner), emask)
             out["expert_u"] = self.residual_label(self._a_exp)
         return out
+
+    def vhat(self):
+        """Frozen gate predictor (gate.vhat; Platt) of the current decision state of every slot, float32 [B]."""
+        return self.gpot(feat_raw=self.feat_raw)
 
     def residual_label(self, a_exp):
         """Expert residual in the policy's u-space: s* = clip((a_exp - mean_k a_base) / alpha, -1, 1)."""
@@ -534,6 +565,10 @@ class ResidualVLAEnv:
             self.ended[mask] = False
             for t in (self.shp_sum, self.shp_abs, self.res_abs):
                 t[mask] = 0
+        if self.gate is not None:
+            for t in (self.g_sum, self.v_sum, self.s_sum, self.gs_sum):
+                t[mask] = 0
+            self.prev_now[mask] = False
         self._obs_cache = self._obs(mask)
         return {k: v.clone() for k, v in self._obs_cache.items()}, {}
 
@@ -556,8 +591,34 @@ class ResidualVLAEnv:
             return self._interrupted()
         u = chunk_actions[:, 0] if chunk_actions.dim() == 3 else chunk_actions
         u = u.to(self.dev).float()
-        s = torch.tanh(u) if self.squash == "tanh" else u.clamp(-1, 1)
-        delta = self.alpha * s
+        gate_rows = None
+        if self.gate is None:
+            s = torch.tanh(u) if self.squash == "tanh" else u.clamp(-1, 1)
+            delta = self.alpha * s
+        else:
+            gm = self.gate["mode"]
+            v = self.vhat()
+            if gm == "learned":
+                assert u.shape[1] == ACT_DIM + 1, u.shape
+                g = torch.sigmoid(u[:, ACT_DIM])
+                u = u[:, :ACT_DIM]
+            elif gm == "fixed":
+                assert u.shape[1] == ACT_DIM, u.shape
+                g = torch.sigmoid((self.gate["tau"] - v) / self.gate["temp"])
+            else:
+                g = torch.ones_like(v)
+            s = torch.tanh(u)
+            delta = self.alpha * (g[:, None] * s)
+            self.g_sum += g
+            self.v_sum += v
+            self.s_sum += s.abs().mean(1)
+            self.gs_sum += (g[:, None] * s).abs().mean(1)
+            self.last_gate = dict(g=g.clone(), v=v.clone())
+            if self.split == "eval":
+                gate_rows = [dict(eval=self.eval_count, eid=int(self.eids[i]), dec=int(self.dec[i]),
+                                  v=round(float(v[i]), 5), g=round(float(g[i]), 5),
+                                  ever=bool(self.success_once[i]), now=bool(self.prev_now[i]),
+                                  s_abs=round(float(s[i].abs().mean()), 5)) for i in range(len(g))]
         if self.expert_exec > 0:  # validation: hand-coded residual (expert - base, clipped to alpha)
             delta = self.alpha * ((self._a_exp - self.a_base.mean(1)) / self.alpha).clamp(-1, 1)
         if self.vr.get("expert_only", False):  # validation: expert alone (no base)
@@ -573,6 +634,12 @@ class ResidualVLAEnv:
             wobs, _, _, _, info = self._sim_step(a, render=(k == C.K - 1))
             succ_any |= info["success"].to(self.dev).bool()
         succ_end = info["success"].to(self.dev).bool()
+        if gate_rows is not None:
+            for i, r in enumerate(gate_rows):  # privileged labels, analysis only
+                r["succ_any"] = bool(succ_any[i]); r["now_after"] = bool(succ_end[i])
+            self._log("gate_decisions.jsonl", gate_rows)
+        if self.gate is not None:
+            self.prev_now = succ_end.clone()
         self.dec += 1
         newly = succ_any & ~self.success_once
         reward = newly.float()
@@ -598,13 +665,19 @@ class ResidualVLAEnv:
                                                    success_once=bool(self.success_once[i]),
                                                    success_at_end=bool(succ_end[i])) for i in fin])
         else:
+            gx = (lambda i: {}) if self.gate is None else (lambda i: dict(
+                g_mean=round(float(self.g_sum[i] / max(int(self.dec[i]), 1)), 5),
+                v_mean=round(float(self.v_sum[i] / max(int(self.dec[i]), 1)), 5),
+                s_abs=round(float(self.s_sum[i] / max(int(self.dec[i]), 1)), 5),
+                gs_abs=round(float(self.gs_sum[i] / max(int(self.dec[i]), 1)), 5)))
             ext = (lambda i: {}) if self.pbrs is None else (lambda i: dict(
                 shp_sum=round(float(self.shp_sum[i]), 5), shp_abs=round(float(self.shp_abs[i]), 5),
                 phi0=round(float(self.phi0[i]), 5), phi_prev_end=round(float(rinfo["phi_prev"][i]), 5),
                 phi_next_end=round(float(rinfo["phi_next"][i]), 5), r_end=round(float(reward[i]), 5),
                 term=bool(term[i]), res_abs=round(float(self.res_abs[i] / max(int(self.dec[i]), 1)), 5)))
             self._log("train_episodes.jsonl", [dict(eid=int(self.eids[i]), success_once=bool(self.success_once[i]),
-                                                    dec=int(self.dec[i]), **ext(i)) for i in fin if not self._logged[i]])
+                                                    dec=int(self.dec[i]), **ext(i), **gx(i))
+                                               for i in fin if not self._logged[i]])
             for i in fin:
                 self._logged[i] = True
         obs = self._obs()

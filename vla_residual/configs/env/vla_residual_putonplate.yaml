@@ -30,6 +30,11 @@ vla_residual:
   n_eval: 128
   eval_noise_rep: 0
   zero_vlm: False  # T032 E0: True -> VLM feature block (first 2048 dims of "states") is constant 0; pi0.5 unchanged
+  gate:            # T036 competence gate: a = a_base + alpha * g * tanh(u)   (vla_residual/gate.py)
+    mode: none     # none (E2) | one (g=1 through the gate path) | fixed (G1) | learned (G2: 8th action dim)
+    vhat: end      # gate predictor: end = V_hat_end (fit_vhat_end.py; all states, label success_at_end) | t023 = T023 V_hat
+    tau: 0.41      # G1: g = sigmoid((tau - V_hat) / temp); T017 train split only (gate_select_end.json; t023: 0.37 / 0.1001)
+    temp: 0.1047
 init_params:
   id: PutOnPlateInScene25Main-v3
   num_envs: null
