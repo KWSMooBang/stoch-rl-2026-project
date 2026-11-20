@@ -29,6 +29,7 @@ vla_residual:
   expert_label: False
   n_eval: 128
   eval_noise_rep: 0
+  zero_vlm: False  # T032 E0: True -> VLM feature block (first 2048 dims of "states") is constant 0; pi0.5 unchanged
 init_params:
   id: PutOnPlateInScene25Main-v3
   num_envs: null

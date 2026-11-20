@@ -1,0 +1,23 @@
+# T032: diff of fully composed Hydra configs. old = saved t022_overrides.txt of the E2 run composed with the
+# exp/residual-seeds (b60b623) configs; new = T032 E0 overrides composed with this branch's configs.
+### t022-grpo-s0 (E2) vs t032-grpo-e0-s0 (E0)
++      zero_vlm: true
++      zero_vlm: true
+-    log_path: /outputs/StochRL/runs/t022-grpo-s0/rlinf_logs
++    log_path: /outputs/StochRL/runs/t032-grpo-e0-s0/rlinf_logs
+-    experiment_name: t022-grpo-s0
++    experiment_name: t032-grpo-e0-s0
+### t030-grpo-s1 (E2) vs t032-grpo-e0-s1 (E0)
++      zero_vlm: true
++      zero_vlm: true
+-    log_path: /outputs/StochRL/runs/t030-grpo-s1/rlinf_logs
++    log_path: /outputs/StochRL/runs/t032-grpo-e0-s1/rlinf_logs
+-    experiment_name: t030-grpo-s1
++    experiment_name: t032-grpo-e0-s1
+### t030-grpo-s2 (E2) vs t032-grpo-e0-s2 (E0)
++      zero_vlm: true
++      zero_vlm: true
+-    log_path: /outputs/StochRL/runs/t030-grpo-s2/rlinf_logs
++    log_path: /outputs/StochRL/runs/t032-grpo-e0-s2/rlinf_logs
+-    experiment_name: t030-grpo-s2
++    experiment_name: t032-grpo-e0-s2

@@ -7,6 +7,8 @@ One RL step = one pi0.5 decision (K=5 sim steps at 5 Hz, H=8 generated, first K 
 Observation "states" (float32, dim OBS_DIM):
     [ standardized VLM layer-17 image-token mean (2048, clipped +-5) | robot qpos (8) | base chunk K x 7 (scaled) | t / T ]
     The VLM feature is computed in the same pi0.5 forward that produced the base chunk (hook, observe-only).
+    T032 E0: cfg.vla_residual.zero_vlm=True replaces the 2048 feature dims of "states" by constant 0 (same OBS_DIM,
+    same MLP). Only the returned obs changes: the pi0.5 forward, base chunk, self.feat / feat_raw stay untouched.
     Extra key "expert_u" (privileged scripted-expert residual label, in the same space as u) is present only when
     cfg.vla_residual.expert_label is True; the student MLP reads only "states".
 Reward: sparse success. Train: +1 on the decision in which success first becomes true, terminated=True (no bootstrap).
@@ -322,6 +324,9 @@ class ResidualVLAEnv:
         self.alpha = torch.tensor([vr.a_pos] * 3 + [vr.a_rot] * 3 + [vr.a_grip], dtype=torch.float32)
         self.squash = str(vr.squash)  # tanh | clip
         self.expert_label = bool(vr.get("expert_label", False))
+        self.zero_vlm = bool(vr.get("zero_vlm", False))  # T032 E0: VLM feature block of "states" = 0
+        if self.zero_vlm:
+            print(f"[vla_residual] zero_vlm=True ({self.split}): states[:, :{FEAT_DIM}] = 0", flush=True)
         self.expert_exec = float(vr.get("expert_exec", 0.0))  # 1.0 -> execute expert residual (validation only)
         ecfg = C.env_cfg(num_envs)
         ecfg.max_episode_steps = self.max_dec * C.K + 1  # we handle truncation ourselves
@@ -482,7 +487,8 @@ class ResidualVLAEnv:
 
     def _obs(self, emask=None):
         B = self.num_envs
-        st = torch.cat([self.feat, self.qpos, (self.a_base / BASE_SCALE.to(self.dev)).reshape(B, -1),
+        feat = torch.zeros_like(self.feat) if self.zero_vlm else self.feat
+        st = torch.cat([feat, self.qpos, (self.a_base / BASE_SCALE.to(self.dev)).reshape(B, -1),
                         (self.dec.float() / self.max_dec)[:, None]], 1)
         out = {"states": st.float()}
         if self.expert_label or self.expert_exec > 0:
