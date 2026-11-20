@@ -10,6 +10,9 @@ configs set, so stock configs behave exactly as before:
   rollout.expert_model.vr_expert_obs_key -> "expert" MLP returns env_obs[key] as its action (scripted privileged
                                             expert computed in the env; DAgger labels). Student never sees the key.
   algorithm.vr_anchor (float)            -> SAC/CrossQ actor loss += vr_anchor * mean ||tanh(mu)||^2 (T011 lesson)
+  algorithm.adv_type: grpo_anchor + algorithm.advantage_mode: "anchor_nbase=<int>"
+                                         -> T035 base-anchored GRPO (vla_residual.anchor): base members' loss_mask = 0,
+                                            A = (R - mean base score) / std(residual scores). n_base 0 = RLinf GRPO.
 """
 from __future__ import annotations
 
@@ -142,7 +145,57 @@ def _patch_obs_keys():
     EnvOutput.prepare_observations = prepare_observations
 
 
+_ANCHOR = {"update": 0}
+
+
+def _anchor_n_base(mode):
+    """algorithm.advantage_mode = "anchor_nbase=<int>" (the only algorithm key RLinf hands to advantage functions)."""
+    assert isinstance(mode, str) and mode.startswith("anchor_nbase="), (
+        f"adv_type grpo_anchor expects algorithm.advantage_mode='anchor_nbase=<int>', found {mode!r}")
+    return int(mode.split("=", 1)[1])
+
+
+def _patch_anchor():
+    """T035: advantage "grpo_anchor" (base-anchored GRPO). Inert unless algorithm.adv_type == grpo_anchor.
+
+    Everything happens inside the advantage function (patching the actor class from here does not reach the
+    instance Ray builds). Base members leave the policy loss in two independent ways: their advantage is 0 (PPO
+    surrogate and its gradient are exactly 0) and their loss_mask is cleared in place -- the [n_steps, bsz] mask
+    RLinf passes is a view of rollout_batch["loss_mask"] (num_action_chunks 1), which the actor keeps using.
+    loss_mask_sum (episode length, a divisor in the loss) is left as is: 0 would give 0/0 for base rows.
+    """
+    import torch
+    from rlinf.algorithms import registry
+    from rlinf.algorithms.advantages import compute_grpo_advantages
+
+    from vla_residual import anchor as A
+
+    if "grpo_anchor" in registry.ADV_REGISTRY:
+        return
+
+    @registry.register_advantage("grpo_anchor")
+    def compute_grpo_anchor_advantages(rewards, loss_mask, group_size, **kwargs):
+        n_base = _anchor_n_base(kwargs.get("advantage_mode"))
+        if n_base == 0:  # no base members: exactly RLinf GRPO
+            return compute_grpo_advantages(rewards=rewards, loss_mask=loss_mask, group_size=group_size, **kwargs)
+        bc = A.base_columns(loss_mask.shape[1], group_size, n_base).to(loss_mask.device)
+        base_steps = int(loss_mask[:, bc].sum())
+        is_view = bool(loss_mask._is_view())
+        loss_mask[:, bc] = False  # in place -> rollout_batch["loss_mask"]
+        adv, stats = A.anchor_advantages(rewards, group_size, n_base)
+        advantages = (torch.zeros_like(loss_mask) + adv.view(1, -1)) * loss_mask
+        row = A.summarize(stats, loss_mask.sum(dim=0).cpu(), group_size, n_base)
+        row.update(update=_ANCHOR["update"], base_steps_masked=base_steps, loss_mask_is_view=is_view)
+        A.log_row(row)
+        print(f"[t035-anchor] update {row['update']}: +{row['adv_pos']} -{row['adv_neg']} 0:{row['adv_zero']} "
+              f"base {row['base_score_mean']:.3f} res {row['res_score_mean']:.3f} res_samples {row['res_samples']} "
+              f"base_masked {base_steps} view {is_view}", flush=True)
+        _ANCHOR["update"] += 1
+        return advantages, None
+
+
 def register():
+    _patch_anchor()
     _patch_obs_keys()
     _patch_env_cls()
     _patch_mlp()

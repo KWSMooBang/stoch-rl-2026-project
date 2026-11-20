@@ -327,6 +327,16 @@ class ResidualVLAEnv:
         self.zero_vlm = bool(vr.get("zero_vlm", False))  # T032 E0: VLM feature block of "states" = 0
         if self.zero_vlm:
             print(f"[vla_residual] zero_vlm=True ({self.split}): states[:, :{FEAT_DIM}] = 0", flush=True)
+        # T035 base-anchored GRPO (train split only): in every group the first anchor_n_base slots are frozen-base
+        # members (executed residual forced to 0, policy output only recorded); anchor_crn shares the pi0.5 noise
+        # of a decision between all members of a group (seeded by episode id, decision, env seed).
+        self.anchor_n_base = int(vr.get("anchor_n_base", 0)) if self.split == "train" else 0
+        self.anchor_crn = bool(vr.get("anchor_crn", False)) and self.split == "train"
+        assert 0 <= self.anchor_n_base < max(self.group_size, 1) or self.anchor_n_base == 0, "anchor_n_base >= group_size"
+        self.base_member = (torch.arange(num_envs) % max(self.group_size, 1)) < self.anchor_n_base
+        if self.anchor_n_base or self.anchor_crn:
+            print(f"[vla_residual] anchor ({self.split}): n_base={self.anchor_n_base}/group {self.group_size} "
+                  f"crn={self.anchor_crn}", flush=True)
         self.expert_exec = float(vr.get("expert_exec", 0.0))  # 1.0 -> execute expert residual (validation only)
         ecfg = C.env_cfg(num_envs)
         ecfg.max_episode_steps = self.max_dec * C.K + 1  # we handle truncation ourselves
@@ -433,11 +443,13 @@ class ResidualVLAEnv:
         self.success_once = torch.zeros(B, dtype=torch.bool, device=self.dev)
         self._logged = torch.zeros(B, dtype=torch.bool)
         self.returns = torch.zeros(B, device=self.dev)
+        self.u_abs_sum = torch.zeros(B, device=self.dev)  # T035: sum over decisions of mean |s(u)| (policy output)
 
     def _reset_metrics(self, mask):
         self._logged[mask.cpu()] = False
         self.success_once[mask] = False
         self.returns[mask] = 0
+        self.u_abs_sum[mask] = 0
         self.dec[mask] = 0
 
     # --- episode ids
@@ -463,6 +475,15 @@ class ResidualVLAEnv:
             for i in idx.tolist():
                 g = torch.Generator().manual_seed(int(self.eids[i]) * 64 + int(self.dec[i]) + 1_000_003 * self.eval_rep)
                 zs.append(torch.randn(*shp, generator=g))
+            return torch.stack(zs).to(self.vla.pol.device)
+        if self.anchor_crn:  # same noise for every member of a group at a given decision
+            cache, zs = {}, []
+            for i in idx.tolist():
+                k = (int(self.eids[i]), int(self.dec[i]))
+                if k not in cache:
+                    g = torch.Generator().manual_seed(k[0] * 64 + k[1] + 1_000_003 * (1000 + self.seed))
+                    cache[k] = torch.randn(*shp, generator=g)
+                zs.append(cache[k])
             return torch.stack(zs).to(self.vla.pol.device)
         return torch.randn(len(idx), *shp, generator=self.gen).to(self.vla.pol.device)
 
@@ -563,6 +584,12 @@ class ResidualVLAEnv:
         if self.vr.get("expert_only", False):  # validation: expert alone (no base)
             delta = None
         B = self.num_envs
+        if self.anchor_n_base:
+            bm = self.base_member.to(self.dev)
+            self._u_abs = torch.where(self._ep_live(), s.abs().mean(1), torch.zeros(B, device=self.dev))
+            self.u_abs_sum += self._u_abs
+            delta = torch.where(bm[:, None], torch.zeros_like(delta), delta)
+        self.last_a_exec = torch.zeros(B, C.K, ACT_DIM, device=self.dev)
         succ_any = torch.zeros(B, dtype=torch.bool, device=self.dev)
         wobs = info = None
         for k in range(C.K):
@@ -570,6 +597,7 @@ class ResidualVLAEnv:
                 a = self._a_exp.clamp(self.lo, self.hi)
             else:
                 a = (self.a_base[:, k] + delta).clamp(self.lo, self.hi)
+            self.last_a_exec[:, k] = a
             wobs, _, _, _, info = self._sim_step(a, render=(k == C.K - 1))
             succ_any |= info["success"].to(self.dev).bool()
         succ_end = info["success"].to(self.dev).bool()
@@ -603,8 +631,12 @@ class ResidualVLAEnv:
                 phi0=round(float(self.phi0[i]), 5), phi_prev_end=round(float(rinfo["phi_prev"][i]), 5),
                 phi_next_end=round(float(rinfo["phi_next"][i]), 5), r_end=round(float(reward[i]), 5),
                 term=bool(term[i]), res_abs=round(float(self.res_abs[i] / max(int(self.dec[i]), 1)), 5)))
+            anc = (lambda i: {}) if not self.anchor_n_base else (lambda i: dict(
+                base=bool(self.base_member[i]), slot=int(i),
+                u_abs=round(float(self.u_abs_sum[i] / max(int(self.dec[i]), 1)), 5)))
             self._log("train_episodes.jsonl", [dict(eid=int(self.eids[i]), success_once=bool(self.success_once[i]),
-                                                    dec=int(self.dec[i]), **ext(i)) for i in fin if not self._logged[i]])
+                                                    dec=int(self.dec[i]), **ext(i), **anc(i))
+                                               for i in fin if not self._logged[i]])
             for i in fin:
                 self._logged[i] = True
         obs = self._obs()
@@ -622,6 +654,10 @@ class ResidualVLAEnv:
         self._obs_cache = {k: v.clone() for k, v in obs.items()}
         rew = reward[:, None]
         return [obs], rew, term[:, None], trunc[:, None], [infos]
+
+    def _ep_live(self):
+        """Slots whose current episode has not finished yet (auto_reset=False keeps stepping finished slots)."""
+        return ~self._logged.to(self.dev)
 
     def potential(self):
         return self.pot(feat_raw=self.feat_raw, qpos=self.qpos, dec=self.dec)

@@ -30,6 +30,8 @@ vla_residual:
   n_eval: 128
   eval_noise_rep: 0
   zero_vlm: False  # T032 E0: True -> VLM feature block (first 2048 dims of "states") is constant 0; pi0.5 unchanged
+  anchor_n_base: 0     # T035: first n slots of every train group run the frozen base (executed residual = 0)
+  anchor_crn: False    # T035: train pi0.5 noise shared inside a group, seeded by (episode id, decision, env seed)
 init_params:
   id: PutOnPlateInScene25Main-v3
   num_envs: null

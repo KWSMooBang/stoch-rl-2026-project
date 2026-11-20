@@ -119,7 +119,46 @@ def main():
             residual_abs_mean=st("res_abs", tr),
             residual_abs_mean_by_third=[float(np.mean([tr[i]["res_abs"] for i in ix])) for ix in thirds if len(ix)],
             train_success_by_third=[float(np.mean([tr[i]["success_once"] for i in ix])) for ix in thirds if len(ix)])
+    # T035 base-anchored GRPO: advantage sign ratio, base-member train success, residual sample count
+    anchor = None
+    adv_rows = jl(os.path.join(a.run_dir, "anchor_adv.jsonl"))
+    if adv_rows or (tr and "base" in tr[0]):
+        def frac(rows, keys):
+            tot = sum(sum(r.get(k, 0) for k in keys) for r in rows)
+            return {k.replace("adv_", "").replace("_steps", ""): (sum(r.get(k, 0) for r in rows) / tot if tot else None)
+                    for k in keys}
+
+        def succ(rows):
+            return float(np.mean([r["success_once"] for r in rows])) if rows else None
+
+        ek, sk = ("adv_pos", "adv_neg", "adv_zero"), ("adv_pos_steps", "adv_neg_steps", "adv_zero_steps")
+        base_eps = [r for r in tr if r.get("base")]
+        res_eps = [r for r in tr if not r.get("base")]
+        th_adv = [list(x) for x in np.array_split(np.arange(len(adv_rows)), 3)] if adv_rows else []
+        ng = sum(r["n_groups"] for r in adv_rows)
+        anchor = dict(
+            n_updates=len(adv_rows), n_groups=ng,
+            residual_samples=sum(r.get("res_samples", 0) for r in adv_rows),  # decisions in the policy loss
+            base_samples_masked=sum(r.get("base_steps_masked", 0) for r in adv_rows),
+            residual_train_episodes=len(res_eps), base_train_episodes=len(base_eps),
+            residual_env_steps=int(sum(5 * r["dec"] for r in res_eps)), base_env_steps=int(sum(5 * r["dec"] for r in base_eps)),
+            base_member_train_success=succ(base_eps), residual_member_train_success=succ(res_eps),
+            base_member_train_success_by_third=[succ([base_eps[i] for i in ix]) for ix in np.array_split(np.arange(len(base_eps)), 3)],
+            residual_member_train_success_by_third=[succ([res_eps[i] for i in ix]) for ix in np.array_split(np.arange(len(res_eps)), 3)],
+            base_member_policy_u_abs=float(np.mean([r["u_abs"] for r in base_eps])) if base_eps else None,
+            residual_member_policy_u_abs=float(np.mean([r["u_abs"] for r in res_eps])) if res_eps else None,
+            adv_sign_episode=frac(adv_rows, ek), adv_sign_step=frac(adv_rows, sk),
+            adv_sign_episode_by_third=[frac([adv_rows[i] for i in ix], ek) for ix in th_adv],
+            adv_sign_first2_updates=frac(adv_rows[:2], ek),
+            adv_mean=float(np.mean([r["adv_mean"] for r in adv_rows])) if adv_rows else None,
+            adv_abs_mean=float(np.mean([r["adv_abs_mean"] for r in adv_rows])) if adv_rows else None,
+            sigma_zero_group_frac=(sum(r["sigma_zero_groups"] for r in adv_rows) / ng) if ng else None,
+            sigma_zero_nonzero_adv_group_frac=(sum(r["sigma_zero_nonzero_adv_groups"] for r in adv_rows) / ng) if ng else None,
+            base_pair_disagree_group_frac=(sum(r["base_pair_disagree_groups"] for r in adv_rows) / ng) if ng else None,
+            per_update=[{k: r.get(k) for k in ("update", "adv_pos", "adv_neg", "adv_zero", "adv_mean", "base_score_mean",
+                                               "res_score_mean", "res_samples", "sigma_zero_groups")} for r in adv_rows])
     m = {
+        "anchor": anchor,
         "task": os.path.basename(os.path.normpath(a.run_dir)).split("-")[0].upper(),
         "aulc_once": aulc, "aulc_end": aulc_end, "shaping": shaping, "algo": a.algo, "seed": a.seed, "return_code": a.rc, "config": os.path.basename(a.cfg),
         "config_overrides": (read(os.path.join(a.run_dir, "t022_overrides.txt"), "") or "").splitlines()[3:],
