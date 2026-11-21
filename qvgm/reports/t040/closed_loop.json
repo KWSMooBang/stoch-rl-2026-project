@@ -1,0 +1,355 @@
+{
+ "n_episodes": 128,
+ "conds": {
+  "b0": {
+   "point": {
+    "once": 0.5625,
+    "once_preservation": 1.0,
+    "once_recovery": 0.0,
+    "once_regression": 0.0,
+    "end": 0.5390625,
+    "end_preservation": 1.0,
+    "end_recovery": 0.0,
+    "end_regression": 0.0
+   },
+   "adopt_rate": 0.0,
+   "mean_acc_steps": 0.0,
+   "mean_acc_steps_if_adopted": 0.0,
+   "d_rms_mean": 0.0014694364465705212,
+   "d_rms_if_adopted": 0.0,
+   "d_xyz_mm_mean": 0.0,
+   "d_grip_mean": 0.0023447144018351185,
+   "dq_mean": 0.0,
+   "clip_frac": 0.4828683181131055,
+   "q0_mean": 0.6158437815356592
+  },
+  "qa0.05": {
+   "point": {
+    "once": 0.453125,
+    "once_preservation": 0.5833333333333334,
+    "once_recovery": 0.2857142857142857,
+    "once_regression": 0.41666666666666663,
+    "end": 0.3046875,
+    "end_preservation": 0.43478260869565216,
+    "end_recovery": 0.15254237288135594,
+    "end_regression": 0.5652173913043479
+   },
+   "adopt_rate": 0.99951171875,
+   "mean_acc_steps": 2.9912109375,
+   "mean_acc_steps_if_adopted": 2.9926722032242306,
+   "d_rms_mean": 0.14246209373246188,
+   "d_rms_if_adopted": 0.14253146400102826,
+   "d_xyz_mm_mean": 9.092456936975395,
+   "d_grip_mean": 0.03320542672776128,
+   "dq_mean": 0.22392198538909724,
+   "clip_frac": 0.06390904108502582,
+   "q0_mean": 0.5943263643475802,
+   "vs_b0": {
+    "once": {
+     "est": -0.109375,
+     "ci": [
+      -0.2109375,
+      0.0
+     ],
+     "n_rescue": 16,
+     "n_harm": 30
+    },
+    "end": {
+     "est": -0.234375,
+     "ci": [
+      -0.328125,
+      -0.1328125
+     ],
+     "n_rescue": 9,
+     "n_harm": 39
+    }
+   },
+   "episode_agree_once": 0.640625
+  },
+  "qa0.1": {
+   "point": {
+    "once": 0.28125,
+    "once_preservation": 0.375,
+    "once_recovery": 0.16071428571428573,
+    "once_regression": 0.625,
+    "end": 0.15625,
+    "end_preservation": 0.2028985507246377,
+    "end_recovery": 0.1016949152542373,
+    "end_regression": 0.7971014492753623
+   },
+   "adopt_rate": 0.98681640625,
+   "mean_acc_steps": 2.9091796875,
+   "mean_acc_steps_if_adopted": 2.9480455220188024,
+   "d_rms_mean": 0.2596061894691285,
+   "d_rms_if_adopted": 0.2630446459996647,
+   "d_xyz_mm_mean": 16.642377930110868,
+   "d_grip_mean": 0.05686869044279774,
+   "dq_mean": 0.3642269188494538,
+   "clip_frac": 0.06298828215767571,
+   "q0_mean": 0.5763602425940917,
+   "vs_b0": {
+    "once": {
+     "est": -0.28125,
+     "ci": [
+      -0.3828125,
+      -0.1796875
+     ],
+     "n_rescue": 9,
+     "n_harm": 45
+    },
+    "end": {
+     "est": -0.3828125,
+     "ci": [
+      -0.4765625,
+      -0.28125
+     ],
+     "n_rescue": 6,
+     "n_harm": 55
+    }
+   },
+   "episode_agree_once": 0.578125
+  },
+  "rg0.1": {
+   "point": {
+    "once": 0.46875,
+    "once_preservation": 0.7083333333333334,
+    "once_recovery": 0.16071428571428573,
+    "once_regression": 0.29166666666666663,
+    "end": 0.359375,
+    "end_preservation": 0.5652173913043478,
+    "end_recovery": 0.11864406779661017,
+    "end_regression": 0.4347826086956522
+   },
+   "adopt_rate": 0.4482421875,
+   "mean_acc_steps": 1.0751953125,
+   "mean_acc_steps_if_adopted": 2.3986928104575163,
+   "d_rms_mean": 0.1042357859987117,
+   "d_rms_if_adopted": 0.2305974451041819,
+   "d_xyz_mm_mean": 5.229601632768535,
+   "d_grip_mean": 0.0478879399806077,
+   "dq_mean": 0.022253199651459,
+   "clip_frac": 0.052413505256481585,
+   "q0_mean": 0.5909167533154687,
+   "vs_b0": {
+    "once": {
+     "est": -0.09375,
+     "ci": [
+      -0.171875,
+      -0.015625
+     ],
+     "n_rescue": 9,
+     "n_harm": 21
+    },
+    "end": {
+     "est": -0.1796875,
+     "ci": [
+      -0.265625,
+      -0.09375
+     ],
+     "n_rescue": 7,
+     "n_harm": 30
+    }
+   },
+   "episode_agree_once": 0.765625
+  },
+  "rn0.1": {
+   "point": {
+    "once": 0.2421875,
+    "once_preservation": 0.2916666666666667,
+    "once_recovery": 0.17857142857142858,
+    "once_regression": 0.7083333333333333,
+    "end": 0.078125,
+    "end_preservation": 0.10144927536231885,
+    "end_recovery": 0.05084745762711865,
+    "end_regression": 0.8985507246376812
+   },
+   "adopt_rate": 1.0,
+   "mean_acc_steps": 3.0,
+   "mean_acc_steps_if_adopted": 3.0,
+   "d_rms_mean": 0.28891487927467097,
+   "d_rms_if_adopted": 0.28891487927467097,
+   "d_xyz_mm_mean": 14.758009104523808,
+   "d_grip_mean": 0.13150776159795896,
+   "dq_mean": -0.04340914056388101,
+   "clip_frac": 0.06816406357847882,
+   "q0_mean": 0.5501847650284617,
+   "vs_b0": {
+    "once": {
+     "est": -0.3203125,
+     "ci": [
+      -0.421875,
+      -0.21875
+     ],
+     "n_rescue": 10,
+     "n_harm": 51
+    },
+    "end": {
+     "est": -0.4609375,
+     "ci": [
+      -0.546875,
+      -0.3671875
+     ],
+     "n_rescue": 3,
+     "n_harm": 62
+    }
+   },
+   "episode_agree_once": 0.5234375
+  },
+  "rg0.05": {
+   "point": {
+    "once": 0.5546875,
+    "once_preservation": 0.7916666666666666,
+    "once_recovery": 0.25,
+    "once_regression": 0.20833333333333337,
+    "end": 0.515625,
+    "end_preservation": 0.7681159420289855,
+    "end_recovery": 0.22033898305084745,
+    "end_regression": 0.23188405797101452
+   },
+   "adopt_rate": 0.46826171875,
+   "mean_acc_steps": 1.26220703125,
+   "mean_acc_steps_if_adopted": 2.6955161626694473,
+   "d_rms_mean": 0.06157280592061332,
+   "d_rms_if_adopted": 0.12977473820026525,
+   "d_xyz_mm_mean": 3.08209278215112,
+   "d_grip_mean": 0.03035494753985757,
+   "dq_mean": 0.014003037318616407,
+   "clip_frac": 0.05343192045256728,
+   "q0_mean": 0.6207185615239723,
+   "vs_b0": {
+    "once": {
+     "est": -0.0078125,
+     "ci": [
+      -0.0859375,
+      0.07050781249999716
+     ],
+     "n_rescue": 14,
+     "n_harm": 15
+    },
+    "end": {
+     "est": -0.0234375,
+     "ci": [
+      -0.1015625,
+      0.0546875
+     ],
+     "n_rescue": 13,
+     "n_harm": 16
+    }
+   },
+   "episode_agree_once": 0.7734375
+  },
+  "rn0.05": {
+   "point": {
+    "once": 0.390625,
+    "once_preservation": 0.5,
+    "once_recovery": 0.25,
+    "once_regression": 0.5,
+    "end": 0.265625,
+    "end_preservation": 0.34782608695652173,
+    "end_recovery": 0.1694915254237288,
+    "end_regression": 0.6521739130434783
+   },
+   "adopt_rate": 1.0,
+   "mean_acc_steps": 3.0,
+   "mean_acc_steps_if_adopted": 3.0,
+   "d_rms_mean": 0.14465085805568378,
+   "d_rms_if_adopted": 0.14465085805568378,
+   "d_xyz_mm_mean": 7.379004561691545,
+   "d_grip_mean": 0.06952947910701823,
+   "dq_mean": -0.013397448941759649,
+   "clip_frac": 0.0662806929767612,
+   "q0_mean": 0.5688251977953769,
+   "vs_b0": {
+    "once": {
+     "est": -0.171875,
+     "ci": [
+      -0.2734375,
+      -0.0625
+     ],
+     "n_rescue": 14,
+     "n_harm": 36
+    },
+    "end": {
+     "est": -0.2734375,
+     "ci": [
+      -0.375,
+      -0.171875
+     ],
+     "n_rescue": 10,
+     "n_harm": 45
+    }
+   },
+   "episode_agree_once": 0.609375
+  }
+ },
+ "qa_vs_random": {
+  "qa0.05-rg0.05": {
+   "once": {
+    "est": -0.1015625,
+    "ci": [
+     -0.2109375,
+     0.0078125
+    ]
+   },
+   "end": {
+    "est": -0.2109375,
+    "ci": [
+     -0.3203125,
+     -0.1015625
+    ]
+   }
+  },
+  "qa0.05-rn0.05": {
+   "once": {
+    "est": 0.0625,
+    "ci": [
+     -0.0390625,
+     0.171875
+    ]
+   },
+   "end": {
+    "est": 0.0390625,
+    "ci": [
+     -0.0703125,
+     0.1484375
+    ]
+   }
+  },
+  "qa0.1-rg0.1": {
+   "once": {
+    "est": -0.1875,
+    "ci": [
+     -0.2890625,
+     -0.0859375
+    ]
+   },
+   "end": {
+    "est": -0.203125,
+    "ci": [
+     -0.296875,
+     -0.109375
+    ]
+   }
+  },
+  "qa0.1-rn0.1": {
+   "once": {
+    "est": 0.0390625,
+    "ci": [
+     -0.0625,
+     0.140625
+    ]
+   },
+   "end": {
+    "est": 0.078125,
+    "ci": [
+     0.0078125,
+     0.1484375
+    ]
+   }
+  }
+ },
+ "condition2": {
+  "best_qa": "qa0.05",
+  "satisfied": false
+ }
+}

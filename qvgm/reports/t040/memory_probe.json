@@ -1,0 +1,113 @@
+{
+ "note": "GPU 1 (RTX 4090 24 GB). Measured inside the closed-loop eval process: frozen pi0.5 (bf16) + ManiSkill scene (32 envs) + T040 critic already resident; no other process on GPU 1 at probe time (smi before 15.7 GB = ours). kv = Q-VGM-style: VLM prefix KV cache under no_grad, flow-matching loss with grad only through the action-expert suffix. joint = RLinf compute_loss (prefix+suffix in one forward): OOM in all 4 configs because autograd keeps the frozen VLM's activations.",
+ "kv_cache_path": {
+  "gpu_smi_before": "1, 15718 MiB",
+  "model_dtype": "torch.bfloat16",
+  "embed_dtype": "torch.bfloat16",
+  "runs": [
+   {
+    "path": "kv",
+    "mode": "full",
+    "batch": 4,
+    "n_trainable": 430098464,
+    "base_alloc_GB": 6.882126808166504,
+    "peak_alloc_GB": 11.061439037322998,
+    "extra_over_base_GB": 4.179312229156494,
+    "adam_state_GB": 2.0443277284502983,
+    "smi_at_peak": "1, 17374 MiB",
+    "error": null
+   },
+   {
+    "path": "kv",
+    "mode": "full",
+    "batch": 8,
+    "n_trainable": 430098464,
+    "base_alloc_GB": 6.97278356552124,
+    "peak_alloc_GB": 11.144519805908203,
+    "extra_over_base_GB": 4.171736240386963,
+    "adam_state_GB": 2.0443277284502983,
+    "smi_at_peak": "1, 17488 MiB",
+    "error": null
+   },
+   {
+    "path": "kv",
+    "mode": "lora16",
+    "batch": 4,
+    "n_trainable": 6930432,
+    "base_alloc_GB": 7.065889358520508,
+    "peak_alloc_GB": 7.7019171714782715,
+    "extra_over_base_GB": 0.6360278129577637,
+    "adam_state_GB": 0.025818675756454468,
+    "smi_at_peak": "1, 14274 MiB",
+    "error": null
+   },
+   {
+    "path": "kv",
+    "mode": "lora16",
+    "batch": 8,
+    "n_trainable": 6930432,
+    "base_alloc_GB": 6.9987664222717285,
+    "peak_alloc_GB": 8.261311054229736,
+    "extra_over_base_GB": 1.2625446319580078,
+    "adam_state_GB": 0.025818675756454468,
+    "smi_at_peak": "1, 15494 MiB",
+    "error": null
+   }
+  ],
+  "path": "kv",
+  "scene_loaded": true,
+  "gpu_smi_after": "1, 13682 MiB"
+ },
+ "joint_forward_path": {
+  "gpu_smi_before": "1, 15730 MiB",
+  "model_dtype": "torch.bfloat16",
+  "embed_dtype": "torch.bfloat16",
+  "runs": [
+   {
+    "mode": "full",
+    "batch": 4,
+    "n_trainable": 430098464,
+    "base_alloc_GB": 6.890061378479004,
+    "peak_alloc_GB": 17.31630802154541,
+    "extra_over_base_GB": 10.426246643066406,
+    "adam_state_GB": 0.0,
+    "smi_at_peak": "1, 24150 MiB",
+    "error": "CUDA out of memory. Tried to allocate 118.00 MiB. GPU 0 has a total capacity of 23.64 GiB of which 60.75 MiB is free. Process 2539710 has 23.57 GiB memory in use. Of the allocated memory 17.29 GiB is "
+   },
+   {
+    "mode": "full",
+    "batch": 8,
+    "n_trainable": 430098464,
+    "base_alloc_GB": 6.8900651931762695,
+    "peak_alloc_GB": 17.105067253112793,
+    "extra_over_base_GB": 10.215002059936523,
+    "adam_state_GB": 0.0,
+    "smi_at_peak": "1, 24050 MiB",
+    "error": "CUDA out of memory. Tried to allocate 242.00 MiB. GPU 0 has a total capacity of 23.64 GiB of which 160.75 MiB is free. Process 2539710 has 23.47 GiB memory in use. Of the allocated memory 17.11 GiB is"
+   },
+   {
+    "mode": "lora16",
+    "batch": 4,
+    "n_trainable": 6930432,
+    "base_alloc_GB": 6.90297794342041,
+    "peak_alloc_GB": 17.455673217773438,
+    "extra_over_base_GB": 10.552695274353027,
+    "adam_state_GB": 0.0,
+    "smi_at_peak": "1, 24090 MiB",
+    "error": "CUDA out of memory. Tried to allocate 122.00 MiB. GPU 0 has a total capacity of 23.64 GiB of which 120.75 MiB is free. Process 2539710 has 23.51 GiB memory in use. Of the allocated memory 17.46 GiB is"
+   },
+   {
+    "mode": "lora16",
+    "batch": 8,
+    "n_trainable": 6930432,
+    "base_alloc_GB": 6.9029741287231445,
+    "peak_alloc_GB": 17.275293827056885,
+    "extra_over_base_GB": 10.37231969833374,
+    "adam_state_GB": 0.0,
+    "smi_at_peak": "1, 24058 MiB",
+    "error": "CUDA out of memory. Tried to allocate 242.00 MiB. GPU 0 has a total capacity of 23.64 GiB of which 152.75 MiB is free. Process 2539710 has 23.48 GiB memory in use. Of the allocated memory 17.28 GiB is"
+   }
+  ],
+  "gpu_smi_after": "1, 13206 MiB"
+ }
+}
