@@ -29,6 +29,10 @@ vla_residual:
   expert_label: False
   n_eval: 128
   eval_noise_rep: 0
+  noise_steer:     # T039: policy output steers pi0.5's initial flow noise instead of adding an action residual
+    mode: none     # none | add (z = z_ref + beta*tanh(u), u=0 -> B0) | replace (z = beta*tanh(u), validation only)
+    beta: 1.0
+    dims: 7        # model action dims steered (broadcast over the H=8 horizon); others keep z_ref
   zero_vlm: False  # T032 E0: True -> VLM feature block (first 2048 dims of "states") is constant 0; pi0.5 unchanged
 init_params:
   id: PutOnPlateInScene25Main-v3

@@ -15,3 +15,7 @@ Design, validation and budget: `design_ko.md` (copy of `/outputs/StochRL/t022/de
   obs = 0; GPU 0 only). `validate_t032.py` unit test, `analyze_t032.py` paired preservation / recovery analysis;
   see `plan_t032_ko.md`, `t032_config_diff.txt`.
 - `submit_chain.sh` — harness submission only when GPU 0/1 is free; resubmits refused runs as `-rN`.
+- `run_t039.sh <seed>` / `submit_t039.sh` — T039 noise-space steering (GRPO, E2 obs; the 7-D policy output shifts
+  pi0.5's initial flow noise, `vla_residual.noise_steer.mode=add, beta=2.0`: z = z_ref + beta*tanh(u) on model action
+  dims 0..6 over the H=8 horizon, u = 0 -> B0 exactly; GPU 0 only; s0 first, s1/s2 only after L1's
+  `/outputs/StochRL/t039/GO`). `validate_t039.py` units / sensitivity / held-out B0 checks; see `plan_t039_ko.md`.

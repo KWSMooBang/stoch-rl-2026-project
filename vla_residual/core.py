@@ -68,6 +68,9 @@ class VLABase:
         self._x = None
         self._pm = None
         self._prompt_mask = None
+        self.keep_cache = False
+        self._cache = []
+        self._cache_mb = None
         m.llm.layers[FEAT_LAYER].register_forward_hook(self._hook)
         orig = m.build_prefix_cache
 
@@ -76,6 +79,8 @@ class VLABase:
             if self._rec:
                 self._pm = out[1].detach()
                 self._prompt_mask = observation.tokenized_prompt_mask.detach()
+                if self.keep_cache:  # T039: prefix KV cache for a second (steered-noise) denoise of the same obs
+                    self._cache_mb = (observation, out[1], out[2])
             return out
 
         m.build_prefix_cache = bpc
@@ -110,6 +115,8 @@ class VLABase:
         B = observation.state.shape[0]
         mb = int(os.environ.get("RC_POLICY_MB", "32"))
         outs, feats = [], []
+        self._cache = []
+        self._state = observation.state
         for s in range(0, B, mb):
             sl = slice(s, min(B, s + mb))
             sub = dataclasses.replace(observation, **{
@@ -120,6 +127,9 @@ class VLABase:
                 outs.append(m.sample_actions(sub, num_steps=m.num_steps, noise=noise[sl]))
             finally:
                 self._rec = False
+            if self.keep_cache:
+                self._cache.append((sl, *self._cache_mb))
+                self._cache_mb = None
             feats.append(self._pool())
         macts = torch.cat(outs, 0)
         acts = apply_output_transform(m._output_transform_fn, {"actions": macts, "state": observation.state},
@@ -128,6 +138,36 @@ class VLABase:
         self.last_feat_raw = f  # unstandardized (T018 cache convention; T024 potential input)
         f = ((f - self.f_mean) / self.f_std).clamp(-5, 5)
         return acts, f
+
+    @torch.no_grad()
+    def denoise(self, noise):
+        """T039: env actions [B,K,7] for the observation of the last act() call (keep_cache=True) and a new initial
+        noise. Re-runs only the action-expert Euler loop on the cached prefix KV cache (same code path as
+        Pi0.sample_actions after build_prefix_cache; the cache is read-only there, it is reused across Euler steps)."""
+        from rlinf.models.embodiment.openpi.transforms.apply import apply_output_transform
+
+        m = self.pol.m
+        assert self._cache, "denoise() needs act() with keep_cache=True"
+        outs = []
+        for sl, obs_pp, prefix_mask, kv_cache in self._cache:
+            x_t = noise[sl]
+            Bm = x_t.shape[0]
+            device = x_t.device
+            dt = -1.0 / m.num_steps
+            t = 1.0
+            if m._config.pytorch_numerics:
+                t = torch.tensor(t, device=device, dtype=torch.float32)
+                dt = torch.tensor(dt, device=device, dtype=torch.float32)
+            while t >= -dt / 2:
+                t_tensor = (t.expand(Bm) if m._config.pytorch_numerics
+                            else torch.full((Bm,), t, device=device, dtype=torch.float32))
+                v_t = m.velocity_from_suffix(m.run_suffix(obs_pp, x_t, t_tensor, kv_cache, prefix_mask))
+                x_t = x_t + dt * v_t
+                t = t + dt
+            outs.append(x_t)
+        macts = torch.cat(outs, 0)
+        return apply_output_transform(m._output_transform_fn, {"actions": macts, "state": self._state},
+                                      action_chunk=None)["actions"].to(torch.float32)[:, : C.K]
 
 
 _VLA = None
@@ -328,6 +368,20 @@ class ResidualVLAEnv:
         if self.zero_vlm:
             print(f"[vla_residual] zero_vlm=True ({self.split}): states[:, :{FEAT_DIM}] = 0", flush=True)
         self.expert_exec = float(vr.get("expert_exec", 0.0))  # 1.0 -> execute expert residual (validation only)
+        # T039 noise-space steering: the 7-D policy output moves pi0.5's initial flow noise instead of the action.
+        #   add:     z = z_ref + beta * tanh(u) on model action dims [:ns_dims], broadcast over the H=8 horizon
+        #            (z_ref = the env's own pi0.5 noise for this decision, i.e. the B0 noise) -> u = 0 is B0 exactly
+        #   replace: z = 0 everywhere, z[..., :ns_dims] = beta * tanh(u)  (DSRL-style; u = 0 -> "noise 0", NOT B0;
+        #            validation only)
+        ns = vr.get("noise_steer", None)
+        self.ns_mode = str(ns.get("mode", "none")) if ns is not None else "none"
+        assert self.ns_mode in ("none", "add", "replace"), self.ns_mode
+        self.ns_beta = float(ns.get("beta", 1.0)) if ns is not None else 0.0
+        self.ns_dims = int(ns.get("dims", ACT_DIM)) if ns is not None else ACT_DIM
+        if self.ns_mode != "none":
+            assert self.expert_exec == 0 and not vr.get("expert_only", False)
+            print(f"[vla_residual] noise_steer mode={self.ns_mode} beta={self.ns_beta} dims={self.ns_dims} "
+                  f"({self.split})", flush=True)
         ecfg = C.env_cfg(num_envs)
         ecfg.max_episode_steps = self.max_dec * C.K + 1  # we handle truncation ourselves
         ecfg.init_params.max_episode_steps = self.max_dec * C.K + 1
@@ -341,6 +395,8 @@ class ResidualVLAEnv:
         self.inner = _INNER[key]
         self.n_interrupted = 0
         self.vla = get_vla()
+        if self.ns_mode != "none":
+            self.vla.keep_cache = True
         self.dev = self.inner.device
         self.alpha = self.alpha.to(self.dev)
         sp = self.inner.env.action_space
@@ -362,6 +418,10 @@ class ResidualVLAEnv:
         self._is_start = True
         self.a_base = None
         self.feat = None
+        self.z_ref = None
+        self.ns_sabs = torch.zeros(B, device=self.dev)   # T039 per-episode sums: mean |tanh u|
+        self.ns_dact = torch.zeros(B, device=self.dev)   # mean |a_exec - a_base| over pos dims (m/step)
+        self.ns_gflip = torch.zeros(B, device=self.dev)  # decisions whose executed gripper sign differs from base
         self.reset_log = []
         self.log_dir = os.environ.get("VR_LOG_DIR")
         self.eval_count = -1
@@ -435,6 +495,9 @@ class ResidualVLAEnv:
         self.returns = torch.zeros(B, device=self.dev)
 
     def _reset_metrics(self, mask):
+        for t in (getattr(self, "ns_sabs", None), getattr(self, "ns_dact", None), getattr(self, "ns_gflip", None)):
+            if t is not None:
+                t[mask] = 0
         self._logged[mask.cpu()] = False
         self.success_once[mask] = False
         self.returns[mask] = 0
@@ -473,7 +536,14 @@ class ResidualVLAEnv:
         if idx is None:
             idx = torch.arange(B)
         sub = C.obs_select(wobs, idx.tolist()) if len(idx) < B else wobs
-        acts, f = self.vla.act(sub, self._noise(idx))
+        z = self._noise(idx)
+        if self.ns_mode != "none":
+            # the prefix cache must cover every slot in order (full batch); GRPO / eval only reset full batches
+            assert len(idx) == B, "noise_steer needs full-batch pi0.5 calls (no partial auto-reset)"
+        acts, f = self.vla.act(sub, z)
+        if self.ns_mode != "none":
+            self.z_ref = z.clone()
+            self.vla._cache_owner = id(self)
         if self.a_base is None:
             self.a_base = torch.zeros(B, C.K, ACT_DIM, device=self.dev)
             self.feat = torch.zeros(B, FEAT_DIM, device=self.dev)
@@ -495,6 +565,26 @@ class ResidualVLAEnv:
             self._a_exp = self.expert(priv_state(self.inner), emask)
             out["expert_u"] = self.residual_label(self._a_exp)
         return out
+
+    def steered_chunk(self, s):
+        """T039: executed chunk [B,K,7] for squashed policy output s = tanh(u) [B,7] (see __init__ for the modes).
+        add-mode with s == 0 returns the B0 chunk object itself (bitwise B0, no extra forward)."""
+        assert self.vla._cache_owner == id(self), "pi0.5 prefix cache belongs to another env wrapper"
+        shift = self.ns_beta * s[:, : self.ns_dims].to(self.z_ref.device, self.z_ref.dtype)
+        if self.ns_mode == "add":
+            if not bool((shift != 0).any()):
+                return self.a_base
+            z = self.z_ref.clone()
+            z[:, :, : self.ns_dims] += shift[:, None, :]
+        else:
+            z = torch.zeros_like(self.z_ref)
+            z[:, :, : self.ns_dims] = shift[:, None, :]
+        return self.vla.denoise(z).to(self.dev)
+
+    def _ns_row(self, i):
+        n = max(int(self.dec[i]), 1)
+        return dict(ns_sabs=round(float(self.ns_sabs[i]) / n, 5), ns_dact=round(float(self.ns_dact[i]) / n, 6),
+                    ns_gflip=int(self.ns_gflip[i]))
 
     def residual_label(self, a_exp):
         """Expert residual in the policy's u-space: s* = clip((a_exp - mean_k a_base) / alpha, -1, 1)."""
@@ -563,13 +653,23 @@ class ResidualVLAEnv:
         if self.vr.get("expert_only", False):  # validation: expert alone (no base)
             delta = None
         B = self.num_envs
+        a_chunk = self.a_base
+        if self.ns_mode != "none":
+            a_chunk = self.steered_chunk(s)
+            delta = torch.zeros_like(delta)
+            alive = (~self.success_once) | bool(self.ignore_terminations)
+            self.ns_sabs += torch.where(alive, s.abs().mean(1), torch.zeros_like(self.ns_sabs))
+            self.ns_dact += torch.where(alive, (a_chunk - self.a_base)[..., :3].abs().mean((1, 2)),
+                                        torch.zeros_like(self.ns_dact))
+            gf = (torch.sign(a_chunk[..., 6]) != torch.sign(self.a_base[..., 6])).any(1)
+            self.ns_gflip += (alive & gf).float()
         succ_any = torch.zeros(B, dtype=torch.bool, device=self.dev)
         wobs = info = None
         for k in range(C.K):
             if delta is None:
                 a = self._a_exp.clamp(self.lo, self.hi)
             else:
-                a = (self.a_base[:, k] + delta).clamp(self.lo, self.hi)
+                a = (a_chunk[:, k] + delta).clamp(self.lo, self.hi)
             wobs, _, _, _, info = self._sim_step(a, render=(k == C.K - 1))
             succ_any |= info["success"].to(self.dev).bool()
         succ_end = info["success"].to(self.dev).bool()
@@ -594,17 +694,20 @@ class ResidualVLAEnv:
             "reward": self.returns / (self.dec * C.K).clamp(min=1)}}
         fin = torch.nonzero(dones).flatten().tolist()
         if self.split == "eval":
+            ext_ns = (lambda i: {}) if self.ns_mode == "none" else (lambda i: self._ns_row(i))
             self._log("eval_episodes.jsonl", [dict(eval=self.eval_count, eid=int(self.eids[i]),
                                                    success_once=bool(self.success_once[i]),
-                                                   success_at_end=bool(succ_end[i])) for i in fin])
+                                                   success_at_end=bool(succ_end[i]), **ext_ns(i)) for i in fin])
         else:
             ext = (lambda i: {}) if self.pbrs is None else (lambda i: dict(
                 shp_sum=round(float(self.shp_sum[i]), 5), shp_abs=round(float(self.shp_abs[i]), 5),
                 phi0=round(float(self.phi0[i]), 5), phi_prev_end=round(float(rinfo["phi_prev"][i]), 5),
                 phi_next_end=round(float(rinfo["phi_next"][i]), 5), r_end=round(float(reward[i]), 5),
                 term=bool(term[i]), res_abs=round(float(self.res_abs[i] / max(int(self.dec[i]), 1)), 5)))
+            ext_ns = (lambda i: {}) if self.ns_mode == "none" else (lambda i: self._ns_row(i))
             self._log("train_episodes.jsonl", [dict(eid=int(self.eids[i]), success_once=bool(self.success_once[i]),
-                                                    dec=int(self.dec[i]), **ext(i)) for i in fin if not self._logged[i]])
+                                                    dec=int(self.dec[i]), **ext(i), **ext_ns(i))
+                                               for i in fin if not self._logged[i]])
             for i in fin:
                 self._logged[i] = True
         obs = self._obs()
