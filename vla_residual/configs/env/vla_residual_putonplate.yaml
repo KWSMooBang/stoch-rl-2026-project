@@ -30,6 +30,7 @@ vla_residual:
   n_eval: 128
   eval_noise_rep: 0
   zero_vlm: False  # T032 E0: True -> VLM feature block (first 2048 dims of "states") is constant 0; pi0.5 unchanged
+  vhat_obs: False  # T037 E0v: True -> append V_hat (gate.vhat predictor) as states[:, 2092]; needs gate.mode=one, obs_dim 2093
   gate:            # T036 competence gate: a = a_base + alpha * g * tanh(u)   (vla_residual/gate.py)
     mode: none     # none (E2) | one (g=1 through the gate path) | fixed (G1) | learned (G2: 8th action dim)
     vhat: end      # gate predictor: end = V_hat_end (fit_vhat_end.py; all states, label success_at_end) | t023 = T023 V_hat

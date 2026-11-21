@@ -13,6 +13,9 @@ Observation "states" (float32, dim OBS_DIM):
     chunk (all 7 dims, gripper included) by a per-decision g in [0, 1] (vla_residual/gate.py). mode=learned appends
     V_hat as one more "states" column (dim OBS_DIM + 1; the actor MLP still reads the first OBS_DIM dims) and takes the
     gate logit from an 8th action dim.
+    T037 E0v: cfg.vla_residual.vhat_obs=True appends the frozen gate predictor V_hat (gate.vhat, Platt, in (0, 1)) of
+    the decision state as one more "states" column (dim OBS_DIM + 1) that the plain actor MLP reads like any other
+    input. Used with zero_vlm=True and gate.mode=one (g = 1): obs = [0 x 2048 | qpos 8 | base chunk 35 | t/16 | V_hat].
     Extra key "expert_u" (privileged scripted-expert residual label, in the same space as u) is present only when
     cfg.vla_residual.expert_label is True; the student MLP reads only "states".
 Reward: sparse success. Train: +1 on the decision in which success first becomes true, terminated=True (no bootstrap).
@@ -331,6 +334,7 @@ class ResidualVLAEnv:
         self.zero_vlm = bool(vr.get("zero_vlm", False))  # T032 E0: VLM feature block of "states" = 0
         if self.zero_vlm:
             print(f"[vla_residual] zero_vlm=True ({self.split}): states[:, :{FEAT_DIM}] = 0", flush=True)
+        self.vhat_obs = bool(vr.get("vhat_obs", False))  # T037 E0v: V_hat appended as states[:, OBS_DIM]
         self.expert_exec = float(vr.get("expert_exec", 0.0))  # 1.0 -> execute expert residual (validation only)
         ecfg = C.env_cfg(num_envs)
         ecfg.max_episode_steps = self.max_dec * C.K + 1  # we handle truncation ourselves
@@ -405,6 +409,9 @@ class ResidualVLAEnv:
             self.gs_sum = torch.zeros(B, device=self.dev)  # mean_dims |g tanh u|
             self.prev_now = torch.zeros(B, dtype=torch.bool, device=self.dev)  # success flag at the decision state
             print(f"[vla_residual] gate {self.gate} ({self.split})", flush=True)
+        if self.vhat_obs:  # the predictor is loaded by the gate block; g must stay 1 (obs-only change)
+            assert self.gate is not None and self.gate["mode"] == "one", "vhat_obs needs gate.mode=one"
+            print(f"[vla_residual] vhat_obs=True ({self.split}): states[:, {OBS_DIM}] = V_hat_{self.gate['vhat']}", flush=True)
         self._t0 = __import__("time").time()
 
     def _log(self, name, rows):
@@ -515,8 +522,8 @@ class ResidualVLAEnv:
         feat = torch.zeros_like(self.feat) if self.zero_vlm else self.feat
         st = torch.cat([feat, self.qpos, (self.a_base / BASE_SCALE.to(self.dev)).reshape(B, -1),
                         (self.dec.float() / self.max_dec)[:, None]], 1)
-        if self.gate is not None and self.gate["mode"] == "learned":
-            st = torch.cat([st, self.vhat()[:, None]], 1)  # column OBS_DIM: gate-head input only
+        if self.vhat_obs or (self.gate is not None and self.gate["mode"] == "learned"):
+            st = torch.cat([st, self.vhat()[:, None]], 1)  # column OBS_DIM: G2 gate-head input / T037 actor input
         out = {"states": st.float()}
         if self.expert_label or self.expert_exec > 0:
             self._a_exp = self.expert(priv_state(self.inner), emask)

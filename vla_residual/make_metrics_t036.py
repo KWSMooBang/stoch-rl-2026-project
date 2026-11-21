@@ -33,13 +33,14 @@ def main():
     ap.add_argument("--tau", type=float, required=True)
     ap.add_argument("--temp", type=float, required=True)
     ap.add_argument("--scale", type=float, default=100.0)
+    ap.add_argument("--task", default="T036")
     a = ap.parse_args()
     mp = os.path.join(a.run_dir, "metrics.json")
     m = json.load(open(mp)) if os.path.exists(mp) else {}
     tr = jl(os.path.join(a.run_dir, "train_episodes.jsonl"))
     gd = jl(os.path.join(a.run_dir, "gate_decisions.jsonl"))
     gate = dict(cond=a.cond, tau=a.tau, temp=a.temp,
-                mode={"g1": "fixed", "g2": "learned", "one": "one", "e2": "none"}.get(a.cond, a.cond))
+                mode={"g1": "fixed", "g2": "learned", "one": "one", "e2": "none", "e0v": "one"}.get(a.cond, a.cond))
     if tr:
         thirds = [ix for ix in np.array_split(np.arange(len(tr)), 3) if len(ix)]
         gate["train_success"] = float(np.mean([r["success_once"] for r in tr]))
@@ -63,7 +64,8 @@ def main():
             g_all=st(g), g_pre_success=st(g[~ever]), g_success_flag_on=st(g[now]), g_success_lost=st(g[ever & ~now]),
             vhat_pre_success=st(v[~ever]), vhat_success_flag_on=st(v[now]),
             loss_per_success_decision=float((now & ~na).sum() / max(int(now.sum()), 1)), n_success_decisions=int(now.sum()),
-            s_abs_mean=float(sa.mean()), gs_abs_mean=float((g * sa).mean()),
+            s_abs_mean=float(sa.mean()), s_abs_pre_success=float(sa[~ever].mean()) if (~ever).any() else None,
+            s_abs_success_flag_on=float(sa[now].mean()) if now.any() else None, gs_abs_mean=float((g * sa).mean()),
             collapsed_to_0=bool((g < 0.05).mean() > 0.95), collapsed_to_1=bool((g > 0.95).mean() > 0.95))
     gate["eval"] = evals
     if a.cond == "g2":
@@ -79,7 +81,7 @@ def main():
                                    tau_equiv_at_t0=-w[2] / w[0] if w[0] else None, ckpt=ck[-1])
         except Exception as e:  # noqa: BLE001
             gate["learned_error"] = repr(e)
-    m["task"] = "T036"
+    m["task"] = a.task
     m["gate"] = gate
     with open(mp, "w") as f:
         json.dump(m, f, indent=1)
