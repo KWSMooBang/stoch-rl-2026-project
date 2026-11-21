@@ -131,6 +131,11 @@ def main():
         "best_heldout_success_once": max((c["success_once"] for c in curve if c["eval"] >= 0), default=None),
         "b0_success_once": curve[0]["success_once"] if b0 else None,
         "train_env_steps": int(total_train_steps), "train_episodes": len(tr),
+        # T038: success of the stochastic train rollouts (E2 ~0.19)
+        "train_success_rate": float(np.mean([r["success_once"] for r in tr])) if tr else None,
+        "train_success_by_third": [float(np.mean([tr[i]["success_once"] for i in ix]))
+                                   for ix in np.array_split(np.arange(len(tr)), 3) if len(ix)] if tr else None,
+        "train_interruptions": len(jl(os.path.join(a.run_dir, "train_interrupted.jsonl"))),
         "train_time_s": round(t1 - t0, 1) if t1 > 0 else None,
         "peak_vram_mib_gpu_total": max(vt) if vt else None,
         "peak_vram_mib_minus_baseline": (max(vt) - base_mib) if vt else None,

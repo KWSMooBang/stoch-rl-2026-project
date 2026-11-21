@@ -10,6 +10,9 @@ configs set, so stock configs behave exactly as before:
   rollout.expert_model.vr_expert_obs_key -> "expert" MLP returns env_obs[key] as its action (scripted privileged
                                             expert computed in the env; DAgger labels). Student never sees the key.
   algorithm.vr_anchor (float)            -> SAC/CrossQ actor loss += vr_anchor * mean ||tanh(mu)||^2 (T011 lesson)
+  algorithm.adv_type: grpo_commit + algorithm.advantage_mode: "commit_k=<int>"
+                                         -> T038 committed residual: GRPO loss only at sample decisions (t % k == 0);
+                                            reuse decisions get loss_mask 0 (rewards / episode scores unchanged).
 """
 from __future__ import annotations
 
@@ -142,7 +145,69 @@ def _patch_obs_keys():
     EnvOutput.prepare_observations = prepare_observations
 
 
+_COMMIT = {"update": 0}
+
+
+def commit_k_from_mode(mode):
+    """algorithm.advantage_mode = "commit_k=<int>" (the only algorithm key RLinf hands to advantage functions)."""
+    assert isinstance(mode, str) and mode.startswith("commit_k="), (
+        f"adv_type grpo_commit expects algorithm.advantage_mode='commit_k=<int>', found {mode!r}")
+    k = int(mode.split("=", 1)[1])
+    assert k >= 1, f"commit_k must be >= 1, found {k}"
+    return k
+
+
+def commit_mask_(loss_mask, loss_mask_sum, k):
+    """T038: restrict the policy loss to sample decisions (step t with t % k == 0), in place.
+
+    loss_mask [n_steps, bsz] must be a view of rollout_batch["loss_mask"] (num_action_chunks 1): row t = decision t
+    because every train rollout epoch starts with a full reset (auto_reset False) and runs synchronized decisions.
+    loss_mask_sum (the per-episode divisor of RLinf's masked_mean_ratio) becomes the number of sample decisions
+    before the episode ended, so each episode keeps the same total loss weight as in E2. Returns stats.
+    """
+    import torch
+
+    n_steps = loss_mask.shape[0]
+    before = int(loss_mask.sum())
+    assert loss_mask._is_view(), "loss_mask must be a view of rollout_batch['loss_mask'] to be edited in place"
+    reuse = (torch.arange(n_steps, device=loss_mask.device) % k) != 0
+    loss_mask[reuse] = False
+    n_s = loss_mask.sum(0)  # [bsz] sample decisions per episode (>= 1: decision 0 always samples)
+    tgt = n_s.view(1, -1, 1).to(loss_mask_sum.dtype)
+    assert loss_mask_sum.dim() == 3 and loss_mask_sum.shape[1] == n_s.shape[0], (
+        f"loss_mask_sum expected [n_chunk, bsz, 1], found {tuple(loss_mask_sum.shape)}")
+    if loss_mask_sum.stride(0) == 0:  # RLinf builds it with expand_as: write the single underlying row
+        loss_mask_sum[0:1].copy_(tgt)
+    else:
+        loss_mask_sum.copy_(tgt.expand_as(loss_mask_sum))
+    assert bool((loss_mask_sum == tgt).all()), "loss_mask_sum was not updated everywhere"
+    return dict(steps_before=before, steps_after=int(loss_mask.sum()), n_s_min=int(n_s.min()),
+                n_s_mean=float(n_s.float().mean()))
+
+
+def _patch_commit():
+    """T038: advantage "grpo_commit" = RLinf GRPO with the loss restricted to sample decisions. k = 1 -> RLinf GRPO
+    called with the untouched inputs. Inert unless algorithm.adv_type == grpo_commit."""
+    from rlinf.algorithms import registry
+    from rlinf.algorithms.advantages import compute_grpo_advantages
+
+    if "grpo_commit" in registry.ADV_REGISTRY:
+        return
+
+    @registry.register_advantage("grpo_commit")
+    def compute_grpo_commit_advantages(rewards, loss_mask, group_size, **kwargs):
+        k = commit_k_from_mode(kwargs.get("advantage_mode"))
+        if k > 1:
+            st = commit_mask_(loss_mask, kwargs["loss_mask_sum"], k)
+            print(f"[t038-commit] update {_COMMIT['update']} k={k}: loss steps {st['steps_before']} -> "
+                  f"{st['steps_after']}, sample decisions/episode mean {st['n_s_mean']:.2f} min {st['n_s_min']}",
+                  flush=True)
+        _COMMIT["update"] += 1
+        return compute_grpo_advantages(rewards=rewards, loss_mask=loss_mask, group_size=group_size, **kwargs)
+
+
 def register():
+    _patch_commit()
     _patch_obs_keys()
     _patch_env_cls()
     _patch_mlp()

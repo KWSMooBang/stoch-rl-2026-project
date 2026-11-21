@@ -11,6 +11,12 @@ Observation "states" (float32, dim OBS_DIM):
     same MLP). Only the returned obs changes: the pi0.5 forward, base chunk, self.feat / feat_raw stay untouched.
     Extra key "expert_u" (privileged scripted-expert residual label, in the same space as u) is present only when
     cfg.vla_residual.expert_label is True; the student MLP reads only "states".
+T038 committed residual: cfg.vla_residual.commit_k = k. The residual u is taken from the policy only at decisions
+    with dec % k == 0 ("sample decisions"); the same u (policy output and exploration noise alike) is re-executed on
+    top of the fresh base chunk at the next k-1 decisions ("reuse decisions"; the policy's u there is ignored).
+    With k > 1 "states" gets one more column c_rem / k, c_rem = decisions (incl. this one) the residual executed at
+    this decision will still be executed for = min(k - dec % k, T - dec). k = 1 (default): every decision samples,
+    no extra column -> E2. The GRPO loss is restricted to sample decisions by vla_residual.rlinf_ext (grpo_commit).
 Reward: sparse success. Train: +1 on the decision in which success first becomes true, terminated=True (no bootstrap).
         Truncation after T=16 decisions (80 sim steps) -> truncated=True (bootstrap where the algorithm does).
 Eval:   ignore_terminations=True -> every episode runs 16 decisions; success_once / success_at_end recorded.
@@ -327,6 +333,12 @@ class ResidualVLAEnv:
         self.zero_vlm = bool(vr.get("zero_vlm", False))  # T032 E0: VLM feature block of "states" = 0
         if self.zero_vlm:
             print(f"[vla_residual] zero_vlm=True ({self.split}): states[:, :{FEAT_DIM}] = 0", flush=True)
+        self.commit_k = int(vr.get("commit_k", 1))  # T038
+        assert self.commit_k >= 1, f"commit_k must be >= 1, found {self.commit_k}"
+        co = vr.get("commit_obs", None)
+        self.commit_obs = (self.commit_k > 1) if co is None else bool(co)
+        if self.commit_k > 1 or self.commit_obs:
+            print(f"[vla_residual] commit_k={self.commit_k} commit_obs={self.commit_obs} ({self.split})", flush=True)
         self.expert_exec = float(vr.get("expert_exec", 0.0))  # 1.0 -> execute expert residual (validation only)
         ecfg = C.env_cfg(num_envs)
         ecfg.max_episode_steps = self.max_dec * C.K + 1  # we handle truncation ourselves
@@ -356,6 +368,8 @@ class ResidualVLAEnv:
         self.expert = ScriptedExpert(B, self.dev)
         self.eids = torch.zeros(B, dtype=torch.long)
         self.dec = torch.zeros(B, dtype=torch.long, device=self.dev)
+        self.u_commit = torch.zeros(B, ACT_DIM, device=self.dev)  # T038: residual being re-executed
+        self.last_commit = None
         self.ep_rep = torch.zeros(B, dtype=torch.long)  # eval noise stream
         self.eval_rep = int(vr.get("eval_noise_rep", 0))
         self._init_metrics()
@@ -490,11 +504,26 @@ class ResidualVLAEnv:
         feat = torch.zeros_like(self.feat) if self.zero_vlm else self.feat
         st = torch.cat([feat, self.qpos, (self.a_base / BASE_SCALE.to(self.dev)).reshape(B, -1),
                         (self.dec.float() / self.max_dec)[:, None]], 1)
+        if self.commit_obs:
+            st = torch.cat([st, (self.commit_remaining().float() / self.commit_k)[:, None]], 1)
         out = {"states": st.float()}
         if self.expert_label or self.expert_exec > 0:
             self._a_exp = self.expert(priv_state(self.inner), emask)
             out["expert_u"] = self.residual_label(self._a_exp)
         return out
+
+    def commit_remaining(self):
+        """Decisions (incl. the current one) the residual executed at the current decision will still be executed."""
+        k = self.commit_k
+        return torch.minimum(k - self.dec % k, (self.max_dec - self.dec).clamp(min=1))
+
+    def commit_u(self, u):
+        """T038: executed u = policy u at sample decisions (dec % k == 0), else the stored one. Updates the store."""
+        sample = (self.dec % self.commit_k) == 0
+        u_exec = torch.where(sample[:, None], u, self.u_commit)
+        self.u_commit = u_exec.clone()
+        self.last_commit = dict(sample=sample.clone(), u_policy=u.clone(), u_exec=u_exec.clone(), dec=self.dec.clone())
+        return u_exec
 
     def residual_label(self, a_exp):
         """Expert residual in the policy's u-space: s* = clip((a_exp - mean_k a_base) / alpha, -1, 1)."""
@@ -555,7 +584,7 @@ class ResidualVLAEnv:
         if self.inner._vr_owner != id(self):
             return self._interrupted()
         u = chunk_actions[:, 0] if chunk_actions.dim() == 3 else chunk_actions
-        u = u.to(self.dev).float()
+        u = self.commit_u(u.to(self.dev).float())
         s = torch.tanh(u) if self.squash == "tanh" else u.clamp(-1, 1)
         delta = self.alpha * s
         if self.expert_exec > 0:  # validation: hand-coded residual (expert - base, clipped to alpha)

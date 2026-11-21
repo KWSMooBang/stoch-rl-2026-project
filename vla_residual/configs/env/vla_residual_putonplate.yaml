@@ -30,6 +30,8 @@ vla_residual:
   n_eval: 128
   eval_noise_rep: 0
   zero_vlm: False  # T032 E0: True -> VLM feature block (first 2048 dims of "states") is constant 0; pi0.5 unchanged
+  commit_k: 1      # T038: residual sampled every k decisions, re-executed in between (1 = E2)
+  commit_obs: null # T038: extra "states" column c_rem/k; null -> on iff commit_k > 1
 init_params:
   id: PutOnPlateInScene25Main-v3
   num_envs: null

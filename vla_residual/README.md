@@ -15,3 +15,6 @@ Design, validation and budget: `design_ko.md` (copy of `/outputs/StochRL/t022/de
   obs = 0; GPU 0 only). `validate_t032.py` unit test, `analyze_t032.py` paired preservation / recovery analysis;
   see `plan_t032_ko.md`, `t032_config_diff.txt`.
 - `submit_chain.sh` — harness submission only when GPU 0/1 is free; resubmits refused runs as `-rN`.
+- `run_t038.sh <k> <seed>` / `submit_t038.sh <k>` — T038 committed residual (E2 + `vla_residual.commit_k`: residual sampled every
+  k decisions and re-executed in between; GRPO loss only at sample decisions via advantage `grpo_commit`; GPU 0 only).
+  `validate_t038.py` / `val_t038.sh` checks; see `plan_t038_ko.md`.
